@@ -1,4 +1,8 @@
-// Public surface of the profiles module. Do NOT deep-import from this module.
+// Public surface of the profiles module. Server-only — client components
+// must import types only, or deep-import values from leaves like
+// @/modules/profiles/errors, @/modules/profiles/validation.
+import "server-only";
+
 export {
   ProfileError,
   PROFILE_ERROR_STATUS,

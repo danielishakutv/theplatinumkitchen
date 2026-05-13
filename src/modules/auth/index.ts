@@ -1,4 +1,8 @@
-// Public surface of the auth module. Do NOT deep-import from this module.
+// Public surface of the auth module. Server-only — client components must
+// import types only, or deep-import values from leaves like
+// @/modules/auth/errors, @/modules/auth/validation, @/modules/auth/tokens.
+import "server-only";
+
 export { AuthError, AUTH_ERROR_STATUS, type AuthErrorCode } from "./errors";
 export {
   signUpSchema,

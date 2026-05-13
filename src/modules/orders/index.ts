@@ -1,4 +1,9 @@
-// Public surface of the orders module. Do NOT deep-import from this module.
+// Public surface of the orders module. Server-only — client components must
+// import types only, or deep-import values from leaves like
+// @/modules/orders/types, @/modules/orders/validation.
+// See [[feedback_client_imports]].
+import "server-only";
+
 export type {
   Order,
   OrderLine,

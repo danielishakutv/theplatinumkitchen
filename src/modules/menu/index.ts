@@ -1,4 +1,8 @@
-// Public surface of the menu module. Do NOT deep-import from this module.
+// Public surface of the menu module. Server-only — client components must
+// import types only, or deep-import values from leaves like
+// @/modules/menu/types, @/modules/menu/validation.
+import "server-only";
+
 export type {
   MenuCategory,
   MenuCategorySlug,
