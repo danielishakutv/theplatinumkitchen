@@ -32,17 +32,31 @@ const TAG_META: Record<string, { Icon: typeof Flame; label: string; className: s
   },
 };
 
-export function MenuItemCard({ item }: { item: MenuItem }) {
-  const [open, setOpen] = useState(false);
+interface MenuItemCardProps {
+  item: MenuItem;
+  // When provided, clicking the card image or the Customise button delegates
+  // to the parent (so the parent can render a single shared detail dialog,
+  // e.g. from a search-suggestion click). If omitted, the card opens its
+  // own internal dialog — the original self-contained behaviour.
+  onOpen?: (item: MenuItem) => void;
+}
+
+export function MenuItemCard({ item, onOpen }: MenuItemCardProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const addLine = useCart((s) => s.addLine);
   const openCart = useCart((s) => s.openCart);
 
   // "Customise" only makes sense if at least one addon group has options.
   const hasAddons = (item.addonGroups ?? []).some((g) => g.options.length > 0);
 
+  const openDialog = () => {
+    if (onOpen) onOpen(item);
+    else setInternalOpen(true);
+  };
+
   const handleQuickAdd = () => {
     if (hasAddons) {
-      setOpen(true);
+      openDialog();
       return;
     }
     addLine({
@@ -69,7 +83,7 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
       >
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openDialog}
           className="relative aspect-[4/3] w-full overflow-hidden bg-platinum-100 text-left"
           aria-label={`View details for ${item.name}`}
         >
@@ -146,7 +160,14 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
         </div>
       </article>
 
-      <ItemDetailDialog item={item} open={open} onOpenChange={setOpen} />
+      {/* The card hosts its own dialog only when the parent didn't take over. */}
+      {!onOpen ? (
+        <ItemDetailDialog
+          item={item}
+          open={internalOpen}
+          onOpenChange={setInternalOpen}
+        />
+      ) : null}
     </>
   );
 }

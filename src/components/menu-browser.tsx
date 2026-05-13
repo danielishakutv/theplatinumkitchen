@@ -5,9 +5,9 @@ import Image from "next/image";
 import { Search, X } from "lucide-react";
 import { MenuItemCard } from "@/components/menu-item-card";
 import { CategoryNav } from "@/components/category-nav";
+import { ItemDetailDialog } from "@/components/item-detail-dialog";
 import { Input } from "@/components/ui/input";
 import { formatNaira } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { MenuCategory, MenuItem } from "@/modules/menu";
 
 interface Props {
@@ -43,6 +43,10 @@ export function MenuBrowser({ categories, items }: Props) {
   const deferredQuery = useDeferredValue(query);
   const q = normalize(deferredQuery.trim());
 
+  // Selected dish for the detail dialog. Shared across the page so a
+  // suggestion click and a card click both open the same single dialog.
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+
   const matches = useMemo<Scored[]>(() => {
     if (q.length === 0) return [];
     return items
@@ -53,6 +57,14 @@ export function MenuBrowser({ categories, items }: Props) {
 
   const suggestions = matches.slice(0, 6);
   const isSearching = q.length > 0;
+
+  const handleSuggestion = (item: MenuItem) => {
+    // Open the dish dialog first; clear the search input afterwards so the
+    // view doesn't flicker between filtered → categorized while the dialog
+    // is mounting on top.
+    setSelectedItem(item);
+    setQuery("");
+  };
 
   return (
     <div className="space-y-8">
@@ -89,10 +101,10 @@ export function MenuBrowser({ categories, items }: Props) {
               <ul className="max-h-80 divide-y divide-platinum-100 overflow-y-auto">
                 {suggestions.map(({ item }) => (
                   <li key={item.id}>
-                    <a
-                      href={`#item-${item.slug}`}
-                      onClick={() => setQuery("")}
-                      className="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-platinum-50"
+                    <button
+                      type="button"
+                      onClick={() => handleSuggestion(item)}
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-platinum-50"
                     >
                       <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-platinum-100">
                         {item.imageUrl ? (
@@ -114,7 +126,7 @@ export function MenuBrowser({ categories, items }: Props) {
                       <span className="shrink-0 text-xs font-medium tabular-nums text-foreground/80">
                         {formatNaira(item.price)}
                       </span>
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -127,15 +139,42 @@ export function MenuBrowser({ categories, items }: Props) {
       {!isSearching ? <CategoryNav categories={categories} /> : null}
 
       {isSearching ? (
-        <SearchResults matches={matches.map((m) => m.item)} query={deferredQuery} />
+        <SearchResults
+          matches={matches.map((m) => m.item)}
+          query={deferredQuery}
+          onOpen={setSelectedItem}
+        />
       ) : (
-        <CategorizedView categories={categories} items={items} />
+        <CategorizedView
+          categories={categories}
+          items={items}
+          onOpen={setSelectedItem}
+        />
       )}
+
+      {/* One dialog at the page level, controlled by selectedItem. */}
+      {selectedItem ? (
+        <ItemDetailDialog
+          item={selectedItem}
+          open={true}
+          onOpenChange={(o) => {
+            if (!o) setSelectedItem(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
-function SearchResults({ matches, query }: { matches: MenuItem[]; query: string }) {
+function SearchResults({
+  matches,
+  query,
+  onOpen,
+}: {
+  matches: MenuItem[];
+  query: string;
+  onOpen: (item: MenuItem) => void;
+}) {
   if (matches.length === 0) {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
@@ -160,7 +199,7 @@ function SearchResults({ matches, query }: { matches: MenuItem[]; query: string 
       </header>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {matches.map((dish) => (
-          <MenuItemCard key={dish.id} item={dish} />
+          <MenuItemCard key={dish.id} item={dish} onOpen={onOpen} />
         ))}
       </div>
     </section>
@@ -170,9 +209,11 @@ function SearchResults({ matches, query }: { matches: MenuItem[]; query: string 
 function CategorizedView({
   categories,
   items,
+  onOpen,
 }: {
   categories: MenuCategory[];
   items: MenuItem[];
+  onOpen: (item: MenuItem) => void;
 }) {
   return (
     <div className="space-y-16">
@@ -197,9 +238,7 @@ function CategorizedView({
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {dishes.map((dish) => (
-                <div key={dish.id} id={`item-${dish.slug}`} className={cn("scroll-mt-40")}>
-                  <MenuItemCard item={dish} />
-                </div>
+                <MenuItemCard key={dish.id} item={dish} onOpen={onOpen} />
               ))}
             </div>
           </section>
