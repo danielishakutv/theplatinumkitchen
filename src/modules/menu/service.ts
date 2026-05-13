@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   menuAddonGroups,
@@ -13,15 +13,19 @@ import {
 import {
   createAddonGroupSchema,
   createAddonOptionSchema,
+  createCategorySchema,
   createItemSchema,
   updateAddonGroupSchema,
   updateAddonOptionSchema,
+  updateCategorySchema,
   updateItemSchema,
   type CreateAddonGroupInput,
   type CreateAddonOptionInput,
+  type CreateCategoryInput,
   type CreateItemInput,
   type UpdateAddonGroupInput,
   type UpdateAddonOptionInput,
+  type UpdateCategoryInput,
   type UpdateItemInput,
 } from "./validation";
 import {
@@ -300,6 +304,119 @@ export async function toggleItemAvailable(
     .where(eq(menuItems.id, id));
   const result = await findItemById(id);
   return result!;
+}
+
+// Category CRUD --------------------------------------------------------------
+
+export async function createCategory(
+  actor: ActorLike,
+  input: CreateCategoryInput,
+): Promise<MenuCategory> {
+  requirePermission(actor, "menu:write");
+  const parsed = createCategorySchema.safeParse(input);
+  if (!parsed.success) throw new MenuServiceError("MENU_INVALID_INPUT", parsed.error.message);
+  const data = parsed.data;
+
+  const existing = await db
+    .select({ slug: menuCategories.slug })
+    .from(menuCategories)
+    .where(eq(menuCategories.slug, data.slug))
+    .limit(1);
+  if (existing.length > 0) throw new MenuServiceError("MENU_CATEGORY_SLUG_TAKEN");
+
+  await db.insert(menuCategories).values({
+    slug: data.slug,
+    name: data.name,
+    tagline: data.tagline,
+    sortOrder: data.sortOrder,
+  });
+
+  return {
+    slug: data.slug,
+    name: data.name,
+    tagline: data.tagline,
+    sortOrder: data.sortOrder,
+  };
+}
+
+export async function updateCategory(
+  actor: ActorLike,
+  slug: string,
+  input: UpdateCategoryInput,
+): Promise<void> {
+  requirePermission(actor, "menu:write");
+  const parsed = updateCategorySchema.safeParse(input);
+  if (!parsed.success) throw new MenuServiceError("MENU_INVALID_INPUT", parsed.error.message);
+  const data = parsed.data;
+
+  const [existing] = await db
+    .select()
+    .from(menuCategories)
+    .where(eq(menuCategories.slug, slug))
+    .limit(1);
+  if (!existing) throw new MenuServiceError("MENU_CATEGORY_NOT_FOUND");
+
+  const patch: Partial<typeof menuCategories.$inferInsert> = {};
+  if (data.name !== undefined) patch.name = data.name;
+  if (data.tagline !== undefined) patch.tagline = data.tagline;
+  if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
+
+  if (Object.keys(patch).length > 0) {
+    await db.update(menuCategories).set(patch).where(eq(menuCategories.slug, slug));
+  }
+}
+
+export async function deleteCategory(actor: ActorLike, slug: string): Promise<void> {
+  requirePermission(actor, "menu:delete");
+  const [existing] = await db
+    .select({ slug: menuCategories.slug })
+    .from(menuCategories)
+    .where(eq(menuCategories.slug, slug))
+    .limit(1);
+  if (!existing) throw new MenuServiceError("MENU_CATEGORY_NOT_FOUND");
+
+  // Block delete if any items still reference this category — fail fast with
+  // a clear error rather than letting the FK throw at the DB level.
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(menuItems)
+    .where(eq(menuItems.categorySlug, slug));
+  if ((n ?? 0) > 0) {
+    throw new MenuServiceError(
+      "MENU_CATEGORY_HAS_ITEMS",
+      `Move ${n} dish${n === 1 ? "" : "es"} to another category first.`,
+    );
+  }
+
+  await db.delete(menuCategories).where(eq(menuCategories.slug, slug));
+}
+
+export async function findCategoryBySlug(slug: string): Promise<MenuCategory | null> {
+  const [row] = await db
+    .select()
+    .from(menuCategories)
+    .where(eq(menuCategories.slug, slug))
+    .limit(1);
+  if (!row) return null;
+  return {
+    slug: row.slug,
+    name: row.name,
+    tagline: row.tagline,
+    sortOrder: row.sortOrder,
+  };
+}
+
+export async function countItemsByCategory(): Promise<Map<string, number>> {
+  const rows = await db
+    .select({
+      slug: menuItems.categorySlug,
+      n: sql<number>`count(*)::int`,
+    })
+    .from(menuItems)
+    .groupBy(menuItems.categorySlug);
+  const map = new Map<string, number>();
+  for (const r of rows) map.set(r.slug, r.n);
+  return map;
 }
 
 // Addon group + option CRUD --------------------------------------------------

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, Settings2 } from "lucide-react";
+import { FolderTree, Plus, Settings2 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,11 @@ export default async function AdminMenuPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="h-10 gap-1.5 rounded-full">
+            <Link href="/admin/menu/categories">
+              <FolderTree className="h-4 w-4" /> Categories
+            </Link>
+          </Button>
           <Button asChild variant="outline" className="h-10 gap-1.5 rounded-full">
             <Link href="/admin/menu/addons">
               <Settings2 className="h-4 w-4" /> Variations

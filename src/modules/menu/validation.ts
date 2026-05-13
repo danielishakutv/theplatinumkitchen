@@ -103,3 +103,19 @@ export const updateAddonOptionSchema = z.object({
   sortOrder: z.number().int().optional(),
 });
 export type UpdateAddonOptionInput = z.infer<typeof updateAddonOptionSchema>;
+
+// Categories ----------------------------------------------------------------
+export const createCategorySchema = z.object({
+  slug: slugField,
+  name: z.string().trim().min(1).max(120),
+  tagline: z.string().trim().max(200).default(""),
+  sortOrder: z.number().int().min(0).max(10_000).default(0),
+});
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
+
+export const updateCategorySchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  tagline: z.string().trim().max(200).optional(),
+  sortOrder: z.number().int().min(0).max(10_000).optional(),
+});
+export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
