@@ -1,4 +1,4 @@
-import { categories, items } from "@/modules/menu";
+import { listCategories, listItems } from "@/modules/menu";
 import { MenuItemCard } from "@/components/menu-item-card";
 import { CategoryNav } from "@/components/category-nav";
 
@@ -8,7 +8,8 @@ export const metadata = {
     "The full Platinum Kitchen menu — signature dishes, soups, grills, and more. Build your order with confidence.",
 };
 
-export default function MenuPage() {
+export default async function MenuPage() {
+  const [categories, items] = await Promise.all([listCategories(), listItems()]);
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl text-center">
@@ -20,7 +21,7 @@ export default function MenuPage() {
         </h1>
         <p className="text-balance mt-4 text-muted-foreground">
           Tap any dish to customise — choose your protein, set the spice, add
-          extras. We'll have it ready in roughly the time it takes to choose.
+          extras. We&apos;ll have it ready in roughly the time it takes to choose.
         </p>
       </div>
 

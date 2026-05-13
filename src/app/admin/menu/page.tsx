@@ -1,12 +1,21 @@
 import Image from "next/image";
-import { Plus, Pencil, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
-import { categories, items } from "@/modules/menu";
+import { listCategories, listItems } from "@/modules/menu";
 import { formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ItemFormDialog } from "./item-form-dialog";
+import { RowActions } from "./row-actions";
 
-export default function AdminMenuPage() {
+export const metadata = {
+  title: "Menu",
+};
+
+export default async function AdminMenuPage() {
+  const session = await auth();
+  const user = session!.user; // layout already enforced auth
+  const [categories, items] = await Promise.all([listCategories(), listItems()]);
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -16,9 +25,7 @@ export default function AdminMenuPage() {
             {items.length} dishes across {categories.length} categories
           </p>
         </div>
-        <Button className="h-10 gap-1.5 rounded-full">
-          <Plus className="h-4 w-4" /> New dish
-        </Button>
+        <ItemFormDialog categories={categories} />
       </header>
 
       <div className="rounded-2xl border border-platinum-200 bg-card p-3">
@@ -56,7 +63,15 @@ export default function AdminMenuPage() {
                     )}
                   >
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-platinum-100">
-                      <Image src={item.imageUrl} alt="" fill sizes="56px" className="object-cover" />
+                      {item.imageUrl ? (
+                        <Image
+                          src={item.imageUrl}
+                          alt=""
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                        />
+                      ) : null}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -72,23 +87,7 @@ export default function AdminMenuPage() {
                         {formatNaira(item.price)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title={item.available ? "Mark sold-out" : "Make available"}
-                        className="h-9 w-9"
-                      >
-                        {item.available ? (
-                          <Eye className="h-4 w-4" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9" title="Edit">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <RowActions item={item} categories={categories} actor={user} />
                   </li>
                 ))}
               </ul>

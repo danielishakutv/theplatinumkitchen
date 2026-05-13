@@ -6,3 +6,4 @@
 export * from "@/modules/users/schema";
 export * from "@/modules/auth/schema";
 export * from "@/modules/profiles/schema";
+export * from "@/modules/menu/schema";

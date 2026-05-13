@@ -1,17 +1,10 @@
-export type MenuCategorySlug =
-  | "signatures"
-  | "rice-and-grains"
-  | "soups-and-swallow"
-  | "grills-and-suya"
-  | "small-chops"
-  | "sides"
-  | "drinks"
-  | "desserts";
+export type MenuCategorySlug = string;
 
 export interface MenuCategory {
   slug: MenuCategorySlug;
   name: string;
   tagline: string;
+  sortOrder?: number;
 }
 
 export type AddonGroupKind = "single" | "multiple";
@@ -32,6 +25,14 @@ export interface AddonGroup {
   options: AddonOption[];
 }
 
+export type MenuItemTag =
+  | "spicy"
+  | "chef's-pick"
+  | "new"
+  | "vegan"
+  | "vegetarian"
+  | "gluten-free";
+
 export interface MenuItem {
   id: string;
   slug: string;
@@ -40,8 +41,31 @@ export interface MenuItem {
   price: number;
   imageUrl: string;
   category: MenuCategorySlug;
-  tags?: ("spicy" | "chef's-pick" | "new" | "vegan" | "vegetarian" | "gluten-free")[];
+  tags?: MenuItemTag[];
   prepMinutes: number;
   available: boolean;
   addonGroups?: AddonGroup[];
 }
+
+export type MenuError =
+  | "MENU_INVALID_INPUT"
+  | "MENU_NOT_FOUND"
+  | "MENU_SLUG_TAKEN"
+  | "MENU_CATEGORY_NOT_FOUND";
+
+export class MenuServiceError extends Error {
+  constructor(
+    public readonly code: MenuError,
+    message?: string,
+  ) {
+    super(message ?? code);
+    this.name = "MenuServiceError";
+  }
+}
+
+export const MENU_ERROR_STATUS: Record<MenuError, number> = {
+  MENU_INVALID_INPUT: 422,
+  MENU_NOT_FOUND: 404,
+  MENU_SLUG_TAKEN: 409,
+  MENU_CATEGORY_NOT_FOUND: 422,
+};

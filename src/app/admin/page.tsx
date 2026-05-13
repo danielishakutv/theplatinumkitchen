@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { orders } from "@/modules/orders";
-import { items } from "@/modules/menu";
+import { listItems } from "@/modules/menu";
 import { ROLE_LABEL, listStaff, can } from "@/modules/users";
 import { auth } from "@/lib/auth";
 import { formatNaira, formatRelative } from "@/lib/format";
@@ -32,7 +32,8 @@ export default async function AdminOverviewPage() {
   const active = orders.filter(
     (o) => !["delivered", "cancelled"].includes(o.status),
   );
-  const popular = items
+  const allItems = await listItems();
+  const popular = allItems
     .filter((i) => i.tags?.includes("chef's-pick"))
     .slice(0, 4);
 

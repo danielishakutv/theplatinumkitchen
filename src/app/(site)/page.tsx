@@ -3,12 +3,13 @@ import Image from "next/image";
 import { ArrowRight, Bike, ChefHat, Receipt, MessageCircle, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MenuItemCard } from "@/components/menu-item-card";
-import { items } from "@/modules/menu";
+import { listItems, type MenuItem } from "@/modules/menu";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1574484284002-952d92456975?w=1600&q=85&auto=format&fit=crop";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const items = await listItems();
   const featured = items
     .filter((i) => i.tags?.includes("chef's-pick") && i.available)
     .slice(0, 4);
@@ -100,7 +101,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Featured({ items }: { items: typeof import("@/modules/menu").items }) {
+function Featured({ items }: { items: MenuItem[] }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -208,7 +209,7 @@ function Story() {
             Our story
           </span>
           <h2 className="text-balance font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">
-            We took our time, and you'll taste it.
+            We took our time, and you&apos;ll taste it.
           </h2>
           <p className="text-lg leading-relaxed text-muted-foreground">
             Platinum Kitchen began as a Sunday tradition in a small Abuja flat —
@@ -216,9 +217,9 @@ function Story() {
             only the right pepper can settle.
           </p>
           <p className="leading-relaxed text-muted-foreground">
-            Today we serve across the city, but the rules haven't changed: the
+            Today we serve across the city, but the rules haven&apos;t changed: the
             stock is made from scratch, the chicken is grilled over real
-            charcoal, and nothing leaves the kitchen if it doesn't taste like
+            charcoal, and nothing leaves the kitchen if it doesn&apos;t taste like
             home.
           </p>
           <div className="grid grid-cols-3 gap-6 pt-4">
