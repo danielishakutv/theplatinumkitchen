@@ -42,3 +42,64 @@ export const updateItemSchema = createItemSchema.partial().extend({
   addonGroupIds: z.array(z.string().min(1).max(100)).max(10).optional(),
 });
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
+
+// Addon groups + options ------------------------------------------------------
+const idSlugField = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "ID must be lowercase letters, numbers, and dashes");
+
+export const createAddonGroupSchema = z
+  .object({
+    id: idSlugField,
+    label: z.string().trim().min(1).max(120),
+    kind: z.enum(["single", "multiple"]),
+    required: z.boolean().default(false),
+    minSelections: z.number().int().min(0).max(100).optional(),
+    maxSelections: z.number().int().min(1).max(100).optional(),
+  })
+  .refine(
+    (v) =>
+      v.minSelections === undefined ||
+      v.maxSelections === undefined ||
+      v.minSelections <= v.maxSelections,
+    { message: "Min selections can't exceed max selections" },
+  );
+export type CreateAddonGroupInput = z.infer<typeof createAddonGroupSchema>;
+
+export const updateAddonGroupSchema = z
+  .object({
+    label: z.string().trim().min(1).max(120).optional(),
+    kind: z.enum(["single", "multiple"]).optional(),
+    required: z.boolean().optional(),
+    minSelections: z.number().int().min(0).max(100).nullable().optional(),
+    maxSelections: z.number().int().min(1).max(100).nullable().optional(),
+  })
+  .refine(
+    (v) => {
+      const min = v.minSelections;
+      const max = v.maxSelections;
+      if (min === undefined || max === undefined) return true;
+      if (min === null || max === null) return true;
+      return min <= max;
+    },
+    { message: "Min selections can't exceed max selections" },
+  );
+export type UpdateAddonGroupInput = z.infer<typeof updateAddonGroupSchema>;
+
+export const createAddonOptionSchema = z.object({
+  id: idSlugField,
+  groupId: idSlugField,
+  name: z.string().trim().min(1).max(120),
+  priceDelta: z.number().int().min(-10_000_000).max(10_000_000).default(0),
+});
+export type CreateAddonOptionInput = z.infer<typeof createAddonOptionSchema>;
+
+export const updateAddonOptionSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  priceDelta: z.number().int().min(-10_000_000).max(10_000_000).optional(),
+  sortOrder: z.number().int().optional(),
+});
+export type UpdateAddonOptionInput = z.infer<typeof updateAddonOptionSchema>;

@@ -13,8 +13,16 @@ export { MenuServiceError, MENU_ERROR_STATUS } from "./types";
 export {
   createItemSchema,
   updateItemSchema,
+  createAddonGroupSchema,
+  updateAddonGroupSchema,
+  createAddonOptionSchema,
+  updateAddonOptionSchema,
   type CreateItemInput,
   type UpdateItemInput,
+  type CreateAddonGroupInput,
+  type UpdateAddonGroupInput,
+  type CreateAddonOptionInput,
+  type UpdateAddonOptionInput,
 } from "./validation";
 export {
   listCategories,
@@ -26,6 +34,12 @@ export {
   updateItem,
   deleteItem,
   toggleItemAvailable,
+  createAddonGroup,
+  updateAddonGroup,
+  deleteAddonGroup,
+  createAddonOption,
+  updateAddonOption,
+  deleteAddonOption,
 } from "./service";
 export {
   menuCategories,
