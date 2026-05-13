@@ -26,6 +26,9 @@ services:
       AUTH_URL: ${AUTH_URL}
       AUTH_TRUST_HOST: "true"
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Platinum Kitchen}
+      # Resend (optional in dev, required in prod for outgoing email)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-Platinum Kitchen <noreply@theplatinumkitchen.com>}
     ports:
       # Bound to localhost only — the host's web server (Apache here) is the
       # public entry point and reverse-proxies to this port. The container
