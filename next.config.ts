@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
   // install at runtime).
   output: "standalone",
   images: {
+    // Disable the server-side image optimizer so /_next/image isn't relied on.
+    // With Cloudflare in front caching aggressively and our Docker image
+    // skipping sharp's postinstall, the optimizer endpoint was 404'ing.
+    // Revisit if/when we move to Cloudinary or wire sharp explicitly.
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },

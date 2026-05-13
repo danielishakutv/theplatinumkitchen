@@ -7,6 +7,8 @@ import { users, type UserRow } from "@/modules/users/schema";
 import type { UserRole } from "@/modules/users";
 import { passwordResetTokens } from "./schema";
 import { generateToken, hashToken, tokenExpiry } from "./tokens";
+import { sendPasswordResetEmail } from "@/modules/notifications";
+import { appUrl } from "@/lib/url";
 import {
   signUpSchema,
   forgotPasswordSchema,
@@ -89,14 +91,19 @@ export async function requestPasswordReset(
     expiresAt: tokenExpiry(RESET_TTL_MINUTES),
   });
 
-  const isDev = process.env.NODE_ENV !== "production";
-  if (isDev) {
-    console.log(
-      `[auth] Password reset for ${email}: token=${token} (expires in ${RESET_TTL_MINUTES}m)`,
-    );
+  const resetUrl = appUrl(`/reset-password?token=${encodeURIComponent(token)}`);
+  const result = await sendPasswordResetEmail({
+    to: email,
+    resetUrl,
+    ttlMinutes: RESET_TTL_MINUTES,
+  });
+
+  // When Resend isn't configured (dev), the notifications module logs to
+  // console and returns delivered=false. Surface the raw token so a developer
+  // can copy/paste it locally without needing email transport.
+  if (!result.delivered && process.env.NODE_ENV !== "production") {
     return { devToken: token };
   }
-  // Production: email transport TBD — token is unreachable until wired up.
   return {};
 }
 

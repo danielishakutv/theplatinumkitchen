@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { users, type UserRow } from "@/modules/users/schema";
 import type { UserRole } from "@/modules/users";
 import { generateToken, hashToken, tokenExpiry } from "@/modules/auth";
+import { sendEmailChangeVerification } from "@/modules/notifications";
+import { appUrl } from "@/lib/url";
 import { emailChangeTokens } from "./schema";
 import {
   updateProfileSchema,
@@ -121,11 +123,14 @@ export async function requestEmailChange(
     expiresAt: tokenExpiry(EMAIL_TOKEN_TTL_MINUTES),
   });
 
-  const isDev = process.env.NODE_ENV !== "production";
-  if (isDev) {
-    console.log(
-      `[profiles] Email change for user ${userId} -> ${newEmail}: token=${token} (expires in ${EMAIL_TOKEN_TTL_MINUTES}m)`,
-    );
+  const verifyUrl = appUrl(`/verify-email?token=${encodeURIComponent(token)}`);
+  const result = await sendEmailChangeVerification({
+    to: newEmail,
+    verifyUrl,
+    ttlMinutes: EMAIL_TOKEN_TTL_MINUTES,
+  });
+
+  if (!result.delivered && process.env.NODE_ENV !== "production") {
     return { devToken: token };
   }
   return {};
