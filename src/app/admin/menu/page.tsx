@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { auth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
-import { listCategories, listItems } from "@/modules/menu";
+import { listAddonGroups, listCategories, listItems } from "@/modules/menu";
 import { formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ItemFormDialog } from "./item-form-dialog";
@@ -14,7 +14,11 @@ export const metadata = {
 export default async function AdminMenuPage() {
   const session = await auth();
   const user = session!.user; // layout already enforced auth
-  const [categories, items] = await Promise.all([listCategories(), listItems()]);
+  const [categories, items, addonGroups] = await Promise.all([
+    listCategories(),
+    listItems(),
+    listAddonGroups(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -25,7 +29,7 @@ export default async function AdminMenuPage() {
             {items.length} dishes across {categories.length} categories
           </p>
         </div>
-        <ItemFormDialog categories={categories} />
+        <ItemFormDialog categories={categories} addonGroups={addonGroups} />
       </header>
 
       <div className="rounded-2xl border border-platinum-200 bg-card p-3">
@@ -87,7 +91,12 @@ export default async function AdminMenuPage() {
                         {formatNaira(item.price)}
                       </p>
                     </div>
-                    <RowActions item={item} categories={categories} actor={user} />
+                    <RowActions
+                      item={item}
+                      categories={categories}
+                      addonGroups={addonGroups}
+                      actor={user}
+                    />
                   </li>
                 ))}
               </ul>

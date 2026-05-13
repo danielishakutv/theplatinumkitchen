@@ -118,6 +118,31 @@ export async function listItems(): Promise<MenuItem[]> {
   return rows.map((r) => rowToItem(r, addons.get(r.id) ?? []));
 }
 
+export async function listAddonGroups(): Promise<AddonGroup[]> {
+  const groups = await db.select().from(menuAddonGroups).orderBy(asc(menuAddonGroups.id));
+  if (groups.length === 0) return [];
+  const options = await db
+    .select()
+    .from(menuAddonOptions)
+    .orderBy(asc(menuAddonOptions.sortOrder));
+  const optionsByGroup = new Map<string, AddonGroup["options"]>();
+  for (const o of options) {
+    if (!optionsByGroup.has(o.groupId)) optionsByGroup.set(o.groupId, []);
+    optionsByGroup
+      .get(o.groupId)!
+      .push({ id: o.id, name: o.name, priceDelta: o.priceDelta });
+  }
+  return groups.map((g) => ({
+    id: g.id,
+    label: g.label,
+    kind: g.kind,
+    required: g.required,
+    min: g.minSelections ?? undefined,
+    max: g.maxSelections ?? undefined,
+    options: optionsByGroup.get(g.id) ?? [],
+  }));
+}
+
 export async function findItemBySlug(slug: string): Promise<MenuItem | null> {
   const [row] = await db.select().from(menuItems).where(eq(menuItems.slug, slug)).limit(1);
   if (!row) return null;

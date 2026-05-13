@@ -24,15 +24,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createItemAction, updateItemAction } from "./actions";
-import type { MenuCategory, MenuItem } from "@/modules/menu";
+import type { AddonGroup, MenuCategory, MenuItem } from "@/modules/menu";
 
 interface Props {
   categories: MenuCategory[];
+  addonGroups: AddonGroup[];
   item?: MenuItem;
   trigger?: React.ReactElement;
 }
 
-export function ItemFormDialog({ categories, item, trigger }: Props) {
+export function ItemFormDialog({ categories, addonGroups, item, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -40,7 +41,17 @@ export function ItemFormDialog({ categories, item, trigger }: Props) {
   const [categorySlug, setCategorySlug] = useState(
     item?.category ?? categories[0]?.slug ?? "",
   );
+  const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>(
+    () => (item?.addonGroups ?? []).map((g) => g.id),
+  );
   const isEdit = Boolean(item);
+
+  const toggleAddon = (id: string, checked: boolean) => {
+    setSelectedAddonIds((prev) => {
+      if (checked) return prev.includes(id) ? prev : [...prev, id];
+      return prev.filter((x) => x !== id);
+    });
+  };
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -48,6 +59,9 @@ export function ItemFormDialog({ categories, item, trigger }: Props) {
     const fd = new FormData(e.currentTarget);
     fd.set("available", available ? "on" : "");
     fd.set("categorySlug", categorySlug);
+    // Wipe and re-append selected addon group ids in checked order.
+    fd.delete("addonGroupIds");
+    for (const id of selectedAddonIds) fd.append("addonGroupIds", id);
 
     startTransition(async () => {
       const result = isEdit
@@ -181,6 +195,45 @@ export function ItemFormDialog({ categories, item, trigger }: Props) {
             <p className="text-xs text-muted-foreground">
               Comma-separated. Allowed: spicy, chef&apos;s-pick, new, vegan,
               vegetarian, gluten-free.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Variations &amp; add-ons</Label>
+            {addonGroups.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No addon groups available yet. (Seed the menu or add them via DB.)
+              </p>
+            ) : (
+              <div className="grid gap-2 rounded-xl border border-platinum-200 bg-platinum-50/40 p-3 sm:grid-cols-2">
+                {addonGroups.map((g) => {
+                  const checked = selectedAddonIds.includes(g.id);
+                  return (
+                    <label
+                      key={g.id}
+                      className="flex cursor-pointer items-start gap-2.5 rounded-lg p-2 hover:bg-card"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => toggleAddon(g.id, v === true)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{g.label}</p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {g.kind === "single" ? "Choose one" : "Pick any"}
+                          {g.required ? " · required" : ""}
+                          {g.options.length > 0
+                            ? ` · ${g.options.length} option${g.options.length === 1 ? "" : "s"}`
+                            : ""}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Customers see the checked groups when they tap &quot;Customise&quot;.
             </p>
           </div>
 

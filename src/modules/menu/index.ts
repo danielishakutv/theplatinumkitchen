@@ -19,6 +19,7 @@ export {
 export {
   listCategories,
   listItems,
+  listAddonGroups,
   findItemBySlug,
   findItemById,
   createItem,

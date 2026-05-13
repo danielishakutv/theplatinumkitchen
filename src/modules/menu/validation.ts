@@ -33,7 +33,12 @@ export const createItemSchema = z.object({
 });
 export type CreateItemInput = z.infer<typeof createItemSchema>;
 
+// Override addonGroupIds explicitly so it stays `undefined` when callers
+// don't provide it. (The create schema applies `.default([])`, which would
+// otherwise turn an absent field into an empty array on update and silently
+// clear every attached addon group.)
 export const updateItemSchema = createItemSchema.partial().extend({
   slug: slugField.optional(),
+  addonGroupIds: z.array(z.string().min(1).max(100)).max(10).optional(),
 });
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
