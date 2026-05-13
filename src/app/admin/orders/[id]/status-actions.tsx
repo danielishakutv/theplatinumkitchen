@@ -8,8 +8,11 @@ import {
   markUnpaidAction,
   setOrderStatusAction,
 } from "../actions";
-import type { Order, OrderStatus } from "@/modules/orders";
-import { NEXT_STATUSES } from "@/modules/orders";
+// Import the values from the types leaf, not the barrel. The barrel
+// re-exports server-only service code (postgres, notifications) which the
+// bundler can't resolve in a client component.
+import type { Order, OrderStatus } from "@/modules/orders/types";
+import { NEXT_STATUSES } from "@/modules/orders/types";
 import { cn } from "@/lib/utils";
 
 const LABELS: Record<OrderStatus, string> = {
