@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, ExternalLink, Loader2, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { createItemAction, updateItemAction } from "../../actions";
 import type { AddonGroup, MenuCategory, MenuItem } from "@/modules/menu";
+import { formatNaira } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface Props {
   mode: "create" | "edit";
@@ -71,21 +73,30 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-12">
-      <div className="space-y-2">
-        <Link
-          href="/admin/menu"
-          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3 w-3" /> Back to menu
-        </Link>
-        <h1 className="font-display text-3xl font-medium tracking-tight sm:text-4xl">
-          {isEdit ? `Edit ${item?.name ?? "dish"}` : "Add a new dish"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {isEdit
-            ? "Tweak the details. Changes go live immediately after saving."
-            : "Fill in the dish details. You can attach variations and add-ons too."}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-2">
+          <Link
+            href="/admin/menu"
+            className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-3 w-3" /> Back to menu
+          </Link>
+          <h1 className="font-display text-3xl font-medium tracking-tight sm:text-4xl">
+            {isEdit ? `Edit ${item?.name ?? "dish"}` : "Add a new dish"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isEdit
+              ? "Tweak the details. Changes go live immediately after saving."
+              : "Fill in the dish details. You can attach variations and add-ons too."}
+          </p>
+        </div>
+        {isEdit && item ? (
+          <Button asChild variant="outline" size="sm" className="h-9 gap-1.5 rounded-full">
+            <Link href={`/menu#${item.slug}`} target="_blank" rel="noreferrer">
+              <Eye className="h-3.5 w-3.5" /> View on site
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <form onSubmit={submit} className="space-y-6">
@@ -217,45 +228,107 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
 
         <Section
           title="Variations &amp; add-ons"
-          description="Pick the reusable groups (protein, spice, extras...) that this dish offers."
+          description="These are the choices customers will see on the dish detail page. Tick which groups apply, and tap a group to edit its options."
         >
           {addonGroups.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-platinum-300 p-6 text-center text-sm text-muted-foreground">
-              No addon groups exist yet.{" "}
+              No variation groups exist yet.{" "}
               <Link
                 href="/admin/menu/addons/new"
                 className="font-medium text-primary hover:underline"
               >
-                Create one
+                Create the first one
               </Link>
               .
             </div>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-3">
               {addonGroups.map((g) => {
                 const checked = selectedAddonIds.includes(g.id);
                 return (
-                  <label
+                  <div
                     key={g.id}
-                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-platinum-200 bg-platinum-50/50 p-3 transition-colors hover:bg-card"
+                    className={cn(
+                      "rounded-2xl border transition-colors",
+                      checked
+                        ? "border-primary/40 bg-emerald-50/40"
+                        : "border-platinum-200 bg-platinum-50/40",
+                    )}
                   >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(v) => toggleAddon(g.id, v === true)}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{g.label}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">
-                        {g.kind === "single" ? "Choose one" : "Pick any"}
-                        {g.required ? " · required" : ""}
-                        {g.options.length > 0
-                          ? ` · ${g.options.length} option${g.options.length === 1 ? "" : "s"}`
-                          : ""}
-                      </p>
-                    </div>
-                  </label>
+                    <label className="flex cursor-pointer items-start gap-3 p-3 sm:p-4">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => toggleAddon(g.id, v === true)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">{g.label}</p>
+                          <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground ring-1 ring-platinum-200">
+                            {g.kind === "single" ? "Single" : "Multiple"}
+                          </span>
+                          {g.required ? (
+                            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                              Required
+                            </span>
+                          ) : null}
+                        </div>
+                        {g.options.length > 0 ? (
+                          <ul className="mt-2 flex flex-wrap gap-1.5">
+                            {g.options.map((opt) => (
+                              <li
+                                key={opt.id}
+                                className="inline-flex items-center gap-1 rounded-full bg-card px-2.5 py-1 text-[11px] text-foreground/80 ring-1 ring-platinum-200"
+                              >
+                                <span>{opt.name}</span>
+                                {opt.priceDelta !== 0 ? (
+                                  <span className="font-medium tabular-nums text-muted-foreground">
+                                    {opt.priceDelta > 0 ? "+" : ""}
+                                    {formatNaira(opt.priceDelta)}
+                                  </span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            No options yet — add some on the group page.
+                          </p>
+                        )}
+                      </div>
+                      <Link
+                        href={`/admin/menu/addons/${g.id}/edit`}
+                        className="shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-card hover:text-foreground"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Pencil className="h-3 w-3" /> Edit
+                      </Link>
+                    </label>
+                  </div>
                 );
               })}
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-1.5 rounded-full"
+                >
+                  <Link href="/admin/menu/addons/new">
+                    <Plus className="h-3.5 w-3.5" /> New variation group
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 gap-1.5 rounded-full"
+                >
+                  <Link href="/admin/menu/addons">
+                    Manage all groups <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           )}
         </Section>
