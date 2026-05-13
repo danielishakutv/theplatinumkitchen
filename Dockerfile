@@ -15,7 +15,13 @@ RUN corepack enable
 # Copy only manifests so this layer caches across source changes.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN pnpm install --frozen-lockfile
+# --ignore-scripts skips lifecycle scripts (postinstall, etc.). Combined with
+# the pinned packageManager above, this avoids pnpm's "approve-builds"
+# interactive gate that fails non-interactive Docker builds. The packages
+# whose scripts we skip (esbuild, sharp, msw, unrs-resolver) ship prebuilt
+# platform binaries via optionalDependencies, so the runtime works without
+# their postinstall.
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ---- builder ------------------------------------------------------------------
 FROM node:${NODE_VERSION} AS builder
