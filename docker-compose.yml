@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: platinum-kitchen-db
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: platinum_kitchen
+      POSTGRES_USER: platinum
+      POSTGRES_PASSWORD: platinum_dev
+    volumes:
+      - pk-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platinum -d platinum_kitchen"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pk-pgdata:

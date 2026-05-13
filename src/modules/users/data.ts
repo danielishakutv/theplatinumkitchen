@@ -1,0 +1,58 @@
+import type { StaffUser } from "./types";
+
+export const staffUsers: StaffUser[] = [
+  {
+    id: "u-aisha",
+    name: "Aisha Bello",
+    email: "aisha@theplatinumkitchen.com",
+    role: "super_admin",
+    avatarUrl: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=200&q=80",
+    active: true,
+    joinedAt: "2025-08-12T09:00:00.000Z",
+  },
+  {
+    id: "u-emeka",
+    name: "Emeka Okafor",
+    email: "emeka@theplatinumkitchen.com",
+    role: "manager",
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+    active: true,
+    joinedAt: "2025-09-01T09:00:00.000Z",
+  },
+  {
+    id: "u-temi",
+    name: "Temi Adebayo",
+    email: "temi@theplatinumkitchen.com",
+    role: "cashier",
+    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
+    active: true,
+    joinedAt: "2025-10-15T09:00:00.000Z",
+  },
+  {
+    id: "u-folake",
+    name: "Folake Adeyemi",
+    email: "folake@theplatinumkitchen.com",
+    role: "kitchen",
+    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80",
+    active: true,
+    joinedAt: "2025-09-20T09:00:00.000Z",
+  },
+  {
+    id: "u-yusuf",
+    name: "Yusuf Ibrahim",
+    email: "yusuf@theplatinumkitchen.com",
+    role: "kitchen",
+    avatarUrl: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200&q=80",
+    active: true,
+    joinedAt: "2025-11-02T09:00:00.000Z",
+  },
+  {
+    id: "u-david",
+    name: "David Okon",
+    email: "david@theplatinumkitchen.com",
+    role: "rider",
+    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    active: false,
+    joinedAt: "2026-01-10T09:00:00.000Z",
+  },
+];
