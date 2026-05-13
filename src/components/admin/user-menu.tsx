@@ -6,6 +6,7 @@ import { LogOut, User as UserIcon, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -70,33 +71,30 @@ export function UserMenu({
         ) : null}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60 p-1.5">
-        <DropdownMenuLabel className="px-2 py-2">
-          <div className="space-y-0.5">
-            <p className="truncate text-sm font-medium text-foreground">
-              {user.name}
-            </p>
-            <p className="truncate text-xs font-normal text-muted-foreground">
-              {user.email}
-            </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-              {ROLE_LABEL[user.role]}
-            </p>
-          </div>
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="px-2 py-2">
+            <div className="space-y-0.5">
+              <p className="truncate text-sm font-medium text-foreground">
+                {user.name}
+              </p>
+              <p className="truncate text-xs font-normal text-muted-foreground">
+                {user.email}
+              </p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                {ROLE_LABEL[user.role]}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          render={
-            <Link href="/admin/profile" className="cursor-pointer">
-              <UserIcon /> Profile
-            </Link>
-          }
-        />
+        <DropdownMenuItem render={<Link href="/admin/profile" />}>
+          <UserIcon /> Profile
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           variant="destructive"
           onClick={handleSignOut}
           disabled={pending}
-          className="cursor-pointer"
         >
           {pending ? <Loader2 className="animate-spin" /> : <LogOut />}
           Sign out
