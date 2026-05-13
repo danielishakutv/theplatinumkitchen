@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useTransition } from "react";
 import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deleteItemAction, toggleAvailableAction } from "./actions";
-import { ItemFormDialog } from "./item-form-dialog";
-import type { AddonGroup, MenuCategory, MenuItem } from "@/modules/menu";
+import type { MenuItem } from "@/modules/menu";
 // Import from the permissions leaf, not the users barrel. The barrel
 // re-exports server-only service code (bcrypt, postgres) which the bundler
 // can't resolve in a client component.
@@ -13,12 +13,10 @@ import { can, type ActorLike } from "@/modules/users/permissions";
 
 interface Props {
   item: MenuItem;
-  categories: MenuCategory[];
-  addonGroups: AddonGroup[];
   actor: ActorLike;
 }
 
-export function RowActions({ item, categories, addonGroups, actor }: Props) {
+export function RowActions({ item, actor }: Props) {
   const [togglePending, startToggle] = useTransition();
   const [deletePending, startDelete] = useTransition();
 
@@ -52,16 +50,17 @@ export function RowActions({ item, categories, addonGroups, actor }: Props) {
         )}
       </Button>
 
-      <ItemFormDialog
-        categories={categories}
-        addonGroups={addonGroups}
-        item={item}
-        trigger={
-          <Button variant="ghost" size="icon" className="h-9 w-9" title="Edit">
-            <Pencil className="h-4 w-4" />
-          </Button>
-        }
-      />
+      <Button
+        asChild
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9"
+        title="Edit"
+      >
+        <Link href={`/admin/menu/items/${item.id}/edit`}>
+          <Pencil className="h-4 w-4" />
+        </Link>
+      </Button>
 
       {can(actor, "menu:delete") ? (
         <Button

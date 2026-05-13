@@ -1,16 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, Plus } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { listAddonGroups } from "@/modules/menu";
 import { formatNaira } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { GroupFormDialog } from "./group-form-dialog";
-import { OptionFormDialog } from "./option-form-dialog";
-import { GroupRowActions, OptionRowActions } from "./addon-row-actions";
+import { GroupRowActions } from "./addon-row-actions";
 
-export const metadata = {
-  title: "Variations & add-ons",
-};
+export const metadata = { title: "Variations & add-ons" };
 
 export default async function AdminAddonsPage() {
   const session = await auth();
@@ -27,14 +23,18 @@ export default async function AdminAddonsPage() {
           >
             <ArrowLeft className="h-3 w-3" /> Back to menu
           </Link>
-          <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
+          <h1 className="mt-2 font-display text-3xl font-medium tracking-tight sm:text-4xl">
             Variations &amp; add-ons
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Reusable groups (protein, spice, size, etc.) you can attach to any dish.
           </p>
         </div>
-        <GroupFormDialog />
+        <Button asChild className="h-10 gap-1.5 rounded-full">
+          <Link href="/admin/menu/addons/new">
+            <Plus className="h-4 w-4" /> New group
+          </Link>
+        </Button>
       </header>
 
       {groups.length === 0 ? (
@@ -44,16 +44,18 @@ export default async function AdminAddonsPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {groups.map((group) => (
             <section
               key={group.id}
               className="overflow-hidden rounded-3xl border border-platinum-200 bg-card"
             >
-              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-platinum-200 bg-platinum-50/40 px-6 py-4">
+              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-platinum-200 bg-platinum-50/40 px-4 py-4 sm:px-6">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-display text-lg font-medium">{group.label}</h2>
+                    <h2 className="font-display text-base font-medium sm:text-lg">
+                      {group.label}
+                    </h2>
                     <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                       {group.kind === "single" ? "Single" : "Multiple"}
                     </span>
@@ -63,8 +65,10 @@ export default async function AdminAddonsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    <code className="rounded bg-background px-1.5 py-0.5">{group.id}</code>
+                  <p className="mt-1 truncate text-[11px] text-muted-foreground sm:text-xs">
+                    <code className="rounded bg-background px-1.5 py-0.5">
+                      {group.id}
+                    </code>
                     {group.kind === "multiple" && (group.min || group.max) ? (
                       <>
                         <ChevronRight className="mx-1 inline h-3 w-3" />
@@ -73,55 +77,43 @@ export default async function AdminAddonsPage() {
                     ) : null}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
-                  <OptionFormDialog
-                    groupId={group.id}
-                    trigger={
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 gap-1 rounded-full"
-                      >
-                        + Option
-                      </Button>
-                    }
-                  />
-                  <GroupRowActions group={group} actor={user} />
-                </div>
+                <GroupRowActions group={group} actor={user} />
               </header>
 
               {group.options.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">
-                  No options yet. Tap &quot;+ Option&quot; above.
-                </div>
+                <Link
+                  href={`/admin/menu/addons/${group.id}/edit`}
+                  className="block p-6 text-center text-sm text-muted-foreground hover:bg-platinum-50/60"
+                >
+                  No options yet — tap to add some.
+                </Link>
               ) : (
                 <ul className="divide-y divide-platinum-200">
-                  {group.options.map((option) => (
+                  {group.options.slice(0, 6).map((option) => (
                     <li
                       key={option.id}
-                      className="flex items-center justify-between gap-4 px-6 py-3"
+                      className="flex items-center justify-between gap-4 px-4 py-2.5 sm:px-6"
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{option.name}</p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          <code className="rounded bg-platinum-50 px-1.5 py-0.5">
-                            {option.id}
-                          </code>
-                          {option.priceDelta !== 0 ? (
-                            <span className="ml-2 font-medium tabular-nums text-foreground/80">
-                              {option.priceDelta > 0 ? "+" : ""}
-                              {formatNaira(option.priceDelta)}
-                            </span>
-                          ) : null}
-                        </p>
-                      </div>
-                      <OptionRowActions
-                        option={option}
-                        groupId={group.id}
-                        actor={user}
-                      />
+                      <p className="truncate text-sm">{option.name}</p>
+                      {option.priceDelta !== 0 ? (
+                        <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
+                          {option.priceDelta > 0 ? "+" : ""}
+                          {formatNaira(option.priceDelta)}
+                        </span>
+                      ) : null}
                     </li>
                   ))}
+                  {group.options.length > 6 ? (
+                    <li className="px-4 py-2.5 text-xs text-muted-foreground sm:px-6">
+                      + {group.options.length - 6} more —{" "}
+                      <Link
+                        href={`/admin/menu/addons/${group.id}/edit`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        manage options
+                      </Link>
+                    </li>
+                  ) : null}
                 </ul>
               )}
             </section>
