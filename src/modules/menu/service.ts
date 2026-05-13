@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   menuAddonGroups,
@@ -269,126 +269,13 @@ export async function toggleItemAvailable(
   return result!;
 }
 
-// Internal-only helpers exposed for the seed script. Not part of the public
-// surface so callers don't bypass permissions accidentally.
-export const _internal = {
-  async upsertCategory(input: {
-    slug: string;
-    name: string;
-    tagline: string;
-    sortOrder: number;
-  }): Promise<void> {
-    await db
-      .insert(menuCategories)
-      .values(input)
-      .onConflictDoUpdate({
-        target: menuCategories.slug,
-        set: { name: input.name, tagline: input.tagline, sortOrder: input.sortOrder },
-      });
-  },
-  async upsertAddonGroup(input: {
-    id: string;
-    label: string;
-    kind: "single" | "multiple";
-    required: boolean;
-    minSelections?: number;
-    maxSelections?: number;
-  }): Promise<void> {
-    await db
-      .insert(menuAddonGroups)
-      .values({
-        id: input.id,
-        label: input.label,
-        kind: input.kind,
-        required: input.required,
-        minSelections: input.minSelections,
-        maxSelections: input.maxSelections,
-      })
-      .onConflictDoUpdate({
-        target: menuAddonGroups.id,
-        set: {
-          label: input.label,
-          kind: input.kind,
-          required: input.required,
-          minSelections: input.minSelections,
-          maxSelections: input.maxSelections,
-        },
-      });
-  },
-  async upsertAddonOption(input: {
-    id: string;
-    groupId: string;
-    name: string;
-    priceDelta: number;
-    sortOrder: number;
-  }): Promise<void> {
-    await db
-      .insert(menuAddonOptions)
-      .values(input)
-      .onConflictDoUpdate({
-        target: menuAddonOptions.id,
-        set: {
-          name: input.name,
-          priceDelta: input.priceDelta,
-          sortOrder: input.sortOrder,
-        },
-      });
-  },
-  async upsertItem(input: {
-    slug: string;
-    name: string;
-    description: string;
-    price: number;
-    imageUrl: string;
-    categorySlug: string;
-    tags: string[];
-    prepMinutes: number;
-    available: boolean;
-    sortOrder: number;
-    addonGroupIds: string[];
-  }): Promise<void> {
-    const [row] = await db
-      .insert(menuItems)
-      .values({
-        slug: input.slug,
-        name: input.name,
-        description: input.description,
-        price: input.price,
-        imageUrl: input.imageUrl,
-        categorySlug: input.categorySlug,
-        tags: input.tags,
-        prepMinutes: input.prepMinutes,
-        available: input.available,
-        sortOrder: input.sortOrder,
-      })
-      .onConflictDoUpdate({
-        target: menuItems.slug,
-        set: {
-          name: input.name,
-          description: input.description,
-          price: input.price,
-          imageUrl: input.imageUrl,
-          categorySlug: input.categorySlug,
-          tags: input.tags,
-          prepMinutes: input.prepMinutes,
-          available: input.available,
-          sortOrder: input.sortOrder,
-        },
-      })
-      .returning({ id: menuItems.id });
-    await db.delete(menuItemAddons).where(eq(menuItemAddons.itemId, row.id));
-    if (input.addonGroupIds.length > 0) {
-      await db.insert(menuItemAddons).values(
-        input.addonGroupIds.map((groupId, idx) => ({
-          itemId: row.id,
-          groupId,
-          sortOrder: idx,
-        })),
-      );
-    }
-  },
-  async countItems(): Promise<number> {
-    const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(menuItems);
-    return row?.n ?? 0;
-  },
-};
+// Seed-time upsert helpers live in ./upserts (no "server-only" import) so the
+// seed script can run under tsx outside the Next bundle. Re-exported here in
+// case anyone in server-land wants them.
+export {
+  upsertCategory,
+  upsertAddonGroup,
+  upsertAddonOption,
+  upsertItem,
+  countItems,
+} from "./upserts";

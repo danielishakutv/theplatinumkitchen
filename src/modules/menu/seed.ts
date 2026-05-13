@@ -1,6 +1,12 @@
 import "dotenv/config";
 import { categories, items } from "./data";
-import { _internal } from "./service";
+import {
+  countItems,
+  upsertAddonGroup,
+  upsertAddonOption,
+  upsertCategory,
+  upsertItem,
+} from "./upserts";
 import type { AddonGroup } from "./types";
 
 async function main() {
@@ -8,7 +14,7 @@ async function main() {
 
   for (let i = 0; i < categories.length; i++) {
     const c = categories[i];
-    await _internal.upsertCategory({
+    await upsertCategory({
       slug: c.slug,
       name: c.name,
       tagline: c.tagline,
@@ -26,7 +32,7 @@ async function main() {
   }
 
   for (const g of groupsById.values()) {
-    await _internal.upsertAddonGroup({
+    await upsertAddonGroup({
       id: g.id,
       label: g.label,
       kind: g.kind,
@@ -36,7 +42,7 @@ async function main() {
     });
     for (let i = 0; i < g.options.length; i++) {
       const o = g.options[i];
-      await _internal.upsertAddonOption({
+      await upsertAddonOption({
         id: o.id,
         groupId: g.id,
         name: o.name,
@@ -49,7 +55,7 @@ async function main() {
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    await _internal.upsertItem({
+    await upsertItem({
       slug: item.slug,
       name: item.name,
       description: item.description,
@@ -65,7 +71,7 @@ async function main() {
     console.log(`  item: ${item.slug}`);
   }
 
-  const total = await _internal.countItems();
+  const total = await countItems();
   console.log(`\nDone. ${total} items in the menu.`);
   process.exit(0);
 }
