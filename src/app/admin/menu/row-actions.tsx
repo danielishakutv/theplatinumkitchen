@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { deleteItemAction, toggleAvailableAction } from "./actions";
 import { ItemFormDialog } from "./item-form-dialog";
 import type { MenuCategory, MenuItem } from "@/modules/menu";
-import { can, type ActorLike } from "@/modules/users";
+// Import from the permissions leaf, not the users barrel. The barrel
+// re-exports server-only service code (bcrypt, postgres) which the bundler
+// can't resolve in a client component.
+import { can, type ActorLike } from "@/modules/users/permissions";
 
 interface Props {
   item: MenuItem;
