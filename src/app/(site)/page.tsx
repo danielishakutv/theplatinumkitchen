@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { MenuItemCard } from "@/components/menu-item-card";
 import { listItems, type MenuItem } from "@/modules/menu";
 
+// Reads from the database (featured section), so we render on demand instead
+// of at build time (when DATABASE_URL isn't available inside the Docker build).
+export const dynamic = "force-dynamic";
+
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1574484284002-952d92456975?w=1600&q=85&auto=format&fit=crop";
 

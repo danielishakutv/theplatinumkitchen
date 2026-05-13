@@ -8,6 +8,10 @@ export const metadata = {
     "The full Platinum Kitchen menu — signature dishes, soups, grills, and more. Build your order with confidence.",
 };
 
+// Reads from the database, so we render on demand instead of at build time
+// (when DATABASE_URL isn't available inside the Docker build context).
+export const dynamic = "force-dynamic";
+
 export default async function MenuPage() {
   const [categories, items] = await Promise.all([listCategories(), listItems()]);
   return (
