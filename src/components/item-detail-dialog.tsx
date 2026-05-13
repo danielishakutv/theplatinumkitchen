@@ -45,7 +45,12 @@ export function ItemDetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const groups = useMemo(() => item.addonGroups ?? [], [item.addonGroups]);
+  // Skip empty addon groups — a group with no options is unfillable, so
+  // showing it (especially when required) would prevent adding to cart.
+  const groups = useMemo(
+    () => (item.addonGroups ?? []).filter((g) => g.options.length > 0),
+    [item.addonGroups],
+  );
   const [selection, setSelection] = useState<SelectionState>(() => buildInitialSelection(groups));
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
@@ -143,13 +148,15 @@ export function ItemDetailDialog({
       <DialogContent className="max-h-[92vh] gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <div className="grid max-h-[92vh] grid-rows-[auto_1fr_auto] sm:max-h-[88vh]">
           <div className="relative aspect-[16/9] w-full bg-platinum-100 sm:aspect-[2/1]">
-            <Image
-              src={item.imageUrl}
-              alt={item.name}
-              fill
-              sizes="(max-width: 640px) 100vw, 640px"
-              className="object-cover"
-            />
+            {item.imageUrl ? (
+              <Image
+                src={item.imageUrl}
+                alt={item.name}
+                fill
+                sizes="(max-width: 640px) 100vw, 640px"
+                className="object-cover"
+              />
+            ) : null}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent p-6 text-white">
               <DialogTitle className="font-display text-3xl leading-tight">
                 {item.name}

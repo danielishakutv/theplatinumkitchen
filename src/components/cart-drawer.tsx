@@ -45,7 +45,7 @@ export function CartDrawer() {
         <SheetHeader className="border-b border-platinum-200 px-6 py-5">
           <SheetTitle className="font-display text-2xl">Your basket</SheetTitle>
           <SheetDescription>
-            Review your items, choose how you want it, and we'll get cooking.
+            Review your items, choose how you want it, and we&apos;ll get cooking.
           </SheetDescription>
         </SheetHeader>
 

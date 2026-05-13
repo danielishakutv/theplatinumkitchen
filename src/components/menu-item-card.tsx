@@ -37,7 +37,8 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
   const addLine = useCart((s) => s.addLine);
   const openCart = useCart((s) => s.openCart);
 
-  const hasAddons = (item.addonGroups?.length ?? 0) > 0;
+  // "Customise" only makes sense if at least one addon group has options.
+  const hasAddons = (item.addonGroups ?? []).some((g) => g.options.length > 0);
 
   const handleQuickAdd = () => {
     if (hasAddons) {
@@ -72,13 +73,19 @@ export function MenuItemCard({ item }: { item: MenuItem }) {
           className="relative aspect-[4/3] w-full overflow-hidden bg-platinum-100 text-left"
           aria-label={`View details for ${item.name}`}
         >
-          <Image
-            src={item.imageUrl}
-            alt={item.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-          />
+          {item.imageUrl ? (
+            <Image
+              src={item.imageUrl}
+              alt={item.name}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="grid h-full place-items-center text-platinum-400">
+              <Sparkles className="h-8 w-8" />
+            </div>
+          )}
           {item.tags && item.tags.length > 0 ? (
             <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
               {item.tags.slice(0, 2).map((tag) => {
