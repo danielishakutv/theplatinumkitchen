@@ -131,8 +131,8 @@ function Forbidden() {
       </div>
       <h2 className="mt-5 font-display text-2xl">Not authorised</h2>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Your role doesn't have access to this page. Speak to a super admin or
-        manager if you think that's wrong.
+        Your role doesn&apos;t have access to this page. Speak to a super admin or
+        manager if you think that&apos;s wrong.
       </p>
     </div>
   );

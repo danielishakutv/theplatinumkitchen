@@ -149,7 +149,7 @@ export function InvoiceView({ order }: { order: Order }) {
                         ) : null}
                         {line.notes ? (
                           <p className="mt-1 text-xs italic text-muted-foreground">
-                            "{line.notes}"
+                            &ldquo;{line.notes}&rdquo;
                           </p>
                         ) : null}
                       </td>
@@ -205,7 +205,7 @@ export function InvoiceView({ order }: { order: Order }) {
         </article>
 
         <p className="mt-6 text-center text-xs text-muted-foreground print:hidden">
-          Tip: use your browser's "Save as PDF" option in the print dialog for a downloadable copy.
+          Tip: use your browser&apos;s &ldquo;Save as PDF&rdquo; option in the print dialog for a downloadable copy.
         </p>
       </div>
     </div>

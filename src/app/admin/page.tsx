@@ -10,9 +10,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { orders } from "@/modules/orders";
+import { listOrders } from "@/modules/orders";
 import { listItems } from "@/modules/menu";
 import { ROLE_LABEL, listStaff, can } from "@/modules/users";
+
+export const dynamic = "force-dynamic";
 import { auth } from "@/lib/auth";
 import { formatNaira, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -23,6 +25,9 @@ export default async function AdminOverviewPage() {
 
   const today = new Date();
   const todayKey = today.toDateString();
+  const orders = can(user, "orders:read")
+    ? await listOrders(user, { limit: 200 })
+    : [];
   const todays = orders.filter(
     (o) => new Date(o.createdAt).toDateString() === todayKey,
   );
@@ -138,7 +143,7 @@ export default async function AdminOverviewPage() {
                   {formatNaira(order.total)}
                 </span>
                 <Button asChild variant="ghost" size="sm" className="h-8 rounded-full">
-                  <Link href={`/order/${order.id}`}>Open</Link>
+                  <Link href={`/admin/orders/${order.id}`}>Open</Link>
                 </Button>
               </li>
             ))}

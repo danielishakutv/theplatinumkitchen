@@ -35,6 +35,7 @@ export interface DeliveryAddress {
   city: string;
   state: string;
   landmark?: string;
+  instructions?: string;
 }
 
 export interface Customer {
@@ -47,9 +48,11 @@ export interface Order {
   id: string;
   number: string;
   createdAt: string;
+  updatedAt: string;
   status: OrderStatus;
   fulfilment: FulfilmentMethod;
   customer: Customer;
+  userId?: string;
   address?: DeliveryAddress;
   lines: OrderLine[];
   subtotal: number;
@@ -58,5 +61,43 @@ export interface Order {
   total: number;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  paystackReference?: string;
   notes?: string;
 }
+
+export type OrderError =
+  | "ORDER_INVALID_INPUT"
+  | "ORDER_NOT_FOUND"
+  | "ORDER_ITEM_NOT_FOUND"
+  | "ORDER_ITEM_UNAVAILABLE"
+  | "ORDER_ADDON_NOT_FOUND"
+  | "ORDER_STATUS_INVALID";
+
+export class OrderServiceError extends Error {
+  constructor(
+    public readonly code: OrderError,
+    message?: string,
+  ) {
+    super(message ?? code);
+    this.name = "OrderServiceError";
+  }
+}
+
+export const ORDER_ERROR_STATUS: Record<OrderError, number> = {
+  ORDER_INVALID_INPUT: 422,
+  ORDER_NOT_FOUND: 404,
+  ORDER_ITEM_NOT_FOUND: 422,
+  ORDER_ITEM_UNAVAILABLE: 409,
+  ORDER_ADDON_NOT_FOUND: 422,
+  ORDER_STATUS_INVALID: 409,
+};
+
+// Status transition rules. Empty array = terminal state.
+export const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
+  received: ["preparing", "cancelled"],
+  preparing: ["ready", "cancelled"],
+  ready: ["out_for_delivery", "delivered", "cancelled"],
+  out_for_delivery: ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+};

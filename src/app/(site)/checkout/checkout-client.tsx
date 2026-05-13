@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useCart, useCartTotals, lineUnitTotal, type FulfilmentMethod } from "@/modules/cart";
-import type { PaymentMethod } from "@/modules/orders";
+import type { PaymentMethod, PlaceOrderInput } from "@/modules/orders";
+import { placeOrderAction } from "./actions";
 import { formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -40,13 +41,47 @@ export function CheckoutClient() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
-    // Demo: simulate latency, then route to a populated order page
-    await new Promise((r) => setTimeout(r, 900));
-    toast.success("Order received — we'll be in touch shortly", {
-      description: "Confirmation will be sent by email and WhatsApp.",
+
+    const fd = new FormData(e.currentTarget);
+    const name = String(fd.get("name") ?? "").trim();
+    const phone = String(fd.get("phone") ?? "").trim();
+    const email = String(fd.get("email") ?? "").trim();
+
+    const payload: PlaceOrderInput = {
+      lines: lines.map((l) => ({
+        itemId: l.itemId,
+        quantity: l.quantity,
+        addons: l.addons.map((a) => ({ groupId: a.groupId, optionId: a.optionId })),
+        notes: l.notes,
+      })),
+      customer: { name, phone, email: email || undefined },
+      fulfilment,
+      paymentMethod: payment,
+      ...(fulfilment === "delivery"
+        ? {
+            address: {
+              street: String(fd.get("street") ?? "").trim(),
+              area: String(fd.get("area") ?? "").trim(),
+              city: String(fd.get("city") ?? "Abuja").trim() || "Abuja",
+              state: "FCT",
+              landmark: String(fd.get("landmark") ?? "").trim() || undefined,
+              instructions: String(fd.get("instructions") ?? "").trim() || undefined,
+            },
+          }
+        : {}),
+    };
+
+    const result = await placeOrderAction(payload);
+    if (!result.ok) {
+      setSubmitting(false);
+      toast.error("Couldn't place your order", { description: result.error });
+      return;
+    }
+    toast.success(`Order ${result.orderNumber} received`, {
+      description: "We'll send a confirmation by email shortly.",
     });
     clearCart();
-    router.push("/order/o-1042");
+    router.push(`/order/${result.orderId}`);
   };
 
   if (isEmpty && !submitting) {
@@ -77,7 +112,7 @@ export function CheckoutClient() {
         Almost there.
       </h1>
       <p className="mt-2 text-muted-foreground">
-        A few details and we'll fire up the kitchen.
+        A few details and we&apos;ll fire up the kitchen.
       </p>
 
       <form

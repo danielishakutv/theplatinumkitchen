@@ -3,7 +3,9 @@ import "server-only";
 import { getFromAddress, getResendClient, isConfigured } from "./client";
 import {
   renderEmailChangeVerification,
+  renderOrderReceived,
   renderPasswordReset,
+  type OrderEmailLine,
 } from "./templates";
 
 interface SendResult {
@@ -54,6 +56,28 @@ export async function sendPasswordResetEmail(args: {
   const { subject, html, text } = renderPasswordReset({
     resetUrl: args.resetUrl,
     ttlMinutes: args.ttlMinutes,
+  });
+  return send(args.to, subject, html, text);
+}
+
+export async function sendOrderReceivedEmail(args: {
+  to: string;
+  customerFirstName: string;
+  orderNumber: string;
+  totalFormatted: string;
+  fulfilmentLabel: string;
+  paymentLabel: string;
+  trackingUrl: string;
+  lines: OrderEmailLine[];
+}): Promise<SendResult> {
+  const { subject, html, text } = renderOrderReceived({
+    customerFirstName: args.customerFirstName,
+    orderNumber: args.orderNumber,
+    totalFormatted: args.totalFormatted,
+    fulfilmentLabel: args.fulfilmentLabel,
+    paymentLabel: args.paymentLabel,
+    trackingUrl: args.trackingUrl,
+    lines: args.lines,
   });
   return send(args.to, subject, html, text);
 }

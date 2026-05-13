@@ -1,12 +1,23 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Check, MessageCircle, Receipt, MapPin, Phone, Bike, Store, Utensils } from "lucide-react";
+import {
+  Check,
+  MessageCircle,
+  Receipt,
+  MapPin,
+  Phone,
+  Bike,
+  Store,
+  Utensils,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getOrderById, type Order, type OrderStatus } from "@/modules/orders";
 import { formatNaira, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 export default async function OrderConfirmationPage({
   params,
@@ -14,7 +25,7 @@ export default async function OrderConfirmationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = getOrderById(id);
+  const order = await getOrderById(id);
   if (!order) notFound();
 
   return (
@@ -37,7 +48,7 @@ function Hero({ order }: { order: Order }) {
         Thank you, {order.customer.name.split(" ")[0]}.
       </h1>
       <p className="mt-2 text-muted-foreground">
-        Your order has been received. We'll send a confirmation by email and WhatsApp.
+        Your order has been received. We&apos;ll send a confirmation by email shortly.
       </p>
       <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-3 rounded-full bg-platinum-100 px-5 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -65,11 +76,15 @@ function Timeline({
   status: OrderStatus;
   fulfilment: Order["fulfilment"];
 }) {
-  const stages = fulfilment === "delivery" ? STAGES : STAGES.filter((s) => s.status !== "out_for_delivery");
+  const stages =
+    fulfilment === "delivery"
+      ? STAGES
+      : STAGES.filter((s) => s.status !== "out_for_delivery");
   const idx = Math.max(
     0,
     stages.findIndex((s) => s.status === status),
   );
+  const isCancelled = status === "cancelled";
 
   return (
     <div className="mt-8 rounded-3xl border border-platinum-200 bg-card p-6 sm:p-8">
@@ -79,58 +94,72 @@ function Timeline({
             Order status
           </span>
           <p className="mt-1 font-display text-xl">
-            {stages[idx]?.label ?? "Pending"}
+            {isCancelled ? "Cancelled" : stages[idx]?.label ?? "Pending"}
           </p>
         </div>
         <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-primary">
-          {fulfilment === "delivery" ? "Delivery" : fulfilment === "pickup" ? "Pickup" : "Dine in"}
+          {fulfilment === "delivery"
+            ? "Delivery"
+            : fulfilment === "pickup"
+              ? "Pickup"
+              : "Dine in"}
         </span>
       </div>
 
-      <ol className="mt-7 grid grid-cols-2 gap-y-6 sm:flex sm:items-start sm:justify-between sm:gap-2">
-        {stages.map((s, i) => {
-          const reached = i <= idx;
-          const isCurrent = i === idx;
-          return (
-            <li key={s.status} className="relative flex flex-1 flex-col items-center text-center">
-              {i < stages.length - 1 ? (
+      {!isCancelled ? (
+        <ol className="mt-7 grid grid-cols-2 gap-y-6 sm:flex sm:items-start sm:justify-between sm:gap-2">
+          {stages.map((s, i) => {
+            const reached = i <= idx;
+            const isCurrent = i === idx;
+            return (
+              <li key={s.status} className="relative flex flex-1 flex-col items-center text-center">
+                {i < stages.length - 1 ? (
+                  <span
+                    className={cn(
+                      "absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-3 hidden h-0.5 sm:block",
+                      i < idx ? "bg-primary" : "bg-platinum-200",
+                    )}
+                  />
+                ) : null}
                 <span
                   className={cn(
-                    "absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-3 hidden h-0.5 sm:block",
-                    i < idx ? "bg-primary" : "bg-platinum-200",
+                    "relative z-10 grid h-7 w-7 place-items-center rounded-full",
+                    reached
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-platinum-100 text-muted-foreground",
+                    isCurrent && "ring-4 ring-primary/15",
                   )}
-                />
-              ) : null}
-              <span
-                className={cn(
-                  "relative z-10 grid h-7 w-7 place-items-center rounded-full",
-                  reached
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-platinum-100 text-muted-foreground",
-                  isCurrent && "ring-4 ring-primary/15",
-                )}
-              >
-                {reached ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
-              </span>
-              <span
-                className={cn(
-                  "mt-2.5 text-xs font-medium uppercase tracking-wider",
-                  reached ? "text-foreground" : "text-muted-foreground",
-                )}
-              >
-                {s.label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+                >
+                  {reached ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+                </span>
+                <span
+                  className={cn(
+                    "mt-2.5 text-xs font-medium uppercase tracking-wider",
+                    reached ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {s.label}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      ) : (
+        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          This order was cancelled. If you weren&apos;t expecting that, give us a call.
+        </p>
+      )}
     </div>
   );
 }
 
 function Summary({ order }: { order: Order }) {
   const FulfilmentIcon =
-    order.fulfilment === "delivery" ? Bike : order.fulfilment === "pickup" ? Store : Utensils;
+    order.fulfilment === "delivery"
+      ? Bike
+      : order.fulfilment === "pickup"
+        ? Store
+        : Utensils;
 
   return (
     <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -146,13 +175,15 @@ function Summary({ order }: { order: Order }) {
           {order.lines.map((line) => (
             <li key={line.id} className="flex gap-4 py-4">
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-platinum-100">
-                <Image
-                  src={line.imageUrl}
-                  alt=""
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                />
+                {line.imageUrl ? (
+                  <Image
+                    src={line.imageUrl}
+                    alt=""
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                  />
+                ) : null}
                 <span className="absolute right-0 top-0 grid h-5 w-5 -translate-y-1.5 translate-x-1.5 place-items-center rounded-full bg-foreground text-[10px] font-semibold text-background">
                   {line.quantity}
                 </span>
@@ -230,9 +261,9 @@ function Summary({ order }: { order: Order }) {
               </span>
             </div>
           ) : null}
-          {order.notes ? (
+          {order.address?.instructions ? (
             <p className="mt-3 rounded-lg bg-platinum-50 px-3 py-2 text-xs text-foreground/80">
-              {order.notes}
+              {order.address.instructions}
             </p>
           ) : null}
         </Card>

@@ -77,6 +77,68 @@ export function renderPasswordReset(args: { resetUrl: string; ttlMinutes: number
   return { subject, html, text };
 }
 
+export interface OrderEmailLine {
+  name: string;
+  quantity: number;
+  unitTotalFormatted: string;
+  addons: string[];
+}
+
+export function renderOrderReceived(args: {
+  customerFirstName: string;
+  orderNumber: string;
+  totalFormatted: string;
+  fulfilmentLabel: string;
+  paymentLabel: string;
+  trackingUrl: string;
+  lines: OrderEmailLine[];
+}): { subject: string; html: string; text: string } {
+  const subject = `We've got your order — ${args.orderNumber}`;
+  const lineRows = args.lines
+    .map(
+      (l) => `
+        <tr>
+          <td style="padding:10px 0;font-size:14px;color:${TEXT};">
+            <strong>${escapeHtml(l.name)}</strong>
+            ${l.addons.length ? `<div style="font-size:12px;color:${MUTED};margin-top:2px">${escapeHtml(l.addons.join(" · "))}</div>` : ""}
+          </td>
+          <td style="padding:10px 0;font-size:13px;color:${MUTED};text-align:right;white-space:nowrap;">
+            ×${l.quantity}
+          </td>
+          <td style="padding:10px 0;font-size:14px;color:${TEXT};text-align:right;white-space:nowrap;">
+            ${escapeHtml(l.unitTotalFormatted)}
+          </td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  const html = shell({
+    title: subject,
+    preheader: `Order ${args.orderNumber} received. ${args.totalFormatted} total.`,
+    body: `
+      <h1>Thanks, ${escapeHtml(args.customerFirstName)}.</h1>
+      <p>We&rsquo;ve received your order and the kitchen is on it. You&rsquo;ll get an update when it ships out.</p>
+      <p class="muted">Order <strong style="color:${TEXT}">${escapeHtml(args.orderNumber)}</strong> · ${escapeHtml(args.fulfilmentLabel)} · ${escapeHtml(args.paymentLabel)}</p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;margin:16px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">
+        ${lineRows}
+      </table>
+      <p style="font-size:16px;margin:4px 0;"><strong>Total: ${escapeHtml(args.totalFormatted)}</strong></p>
+      <p><a class="btn" href="${escapeHtml(args.trackingUrl)}">Track your order</a></p>
+      <p class="muted">Or paste this URL into your browser:<br />${escapeHtml(args.trackingUrl)}</p>
+    `,
+  });
+
+  const textLines = args.lines
+    .map(
+      (l) =>
+        `${l.quantity}× ${l.name}${l.addons.length ? ` (${l.addons.join(", ")})` : ""} — ${l.unitTotalFormatted}`,
+    )
+    .join("\n");
+  const text = `Thanks, ${args.customerFirstName}.\n\nWe've received your order.\n\nOrder ${args.orderNumber} · ${args.fulfilmentLabel} · ${args.paymentLabel}\n\n${textLines}\n\nTotal: ${args.totalFormatted}\n\nTrack: ${args.trackingUrl}`;
+  return { subject, html, text };
+}
+
 export function renderEmailChangeVerification(args: {
   verifyUrl: string;
   ttlMinutes: number;
