@@ -28,6 +28,8 @@ export const createItemSchema = z.object({
   tags: z.array(tagField).max(10).default([]),
   prepMinutes: z.number().int().min(1).max(600).default(20),
   available: z.boolean().default(true),
+  notesEnabled: z.boolean().default(true),
+  notesPlaceholder: z.string().trim().max(200).default(""),
   sortOrder: z.number().int().default(0),
   addonGroupIds: z.array(z.string().min(1).max(100)).max(10).default([]),
 });

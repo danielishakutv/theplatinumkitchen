@@ -56,6 +56,13 @@ function parseTags(raw: string): string[] {
     .filter(Boolean);
 }
 
+function parseAddonGroupIds(formData: FormData): string[] {
+  return formData
+    .getAll("addonGroupIds")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+}
+
 export async function createItemAction(formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
   if (!user) return { ok: false, error: "Sign in first." };
@@ -70,8 +77,10 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
     tags: parseTags(String(formData.get("tags") ?? "")) as CreateItemInput["tags"],
     prepMinutes: Number(formData.get("prepMinutes") ?? 20),
     available: formData.get("available") === "on",
+    notesEnabled: formData.get("notesEnabled") === "on",
+    notesPlaceholder: String(formData.get("notesPlaceholder") ?? "").trim(),
     sortOrder: Number(formData.get("sortOrder") ?? 0),
-    addonGroupIds: [],
+    addonGroupIds: parseAddonGroupIds(formData),
   };
 
   try {
@@ -102,6 +111,9 @@ export async function updateItemAction(
     tags: parseTags(String(formData.get("tags") ?? "")) as UpdateItemInput["tags"],
     prepMinutes: Number(formData.get("prepMinutes") ?? 20),
     available: formData.get("available") === "on",
+    notesEnabled: formData.get("notesEnabled") === "on",
+    notesPlaceholder: String(formData.get("notesPlaceholder") ?? "").trim(),
+    addonGroupIds: parseAddonGroupIds(formData),
   };
 
   try {

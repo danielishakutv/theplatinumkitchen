@@ -32,6 +32,12 @@ export const menuItems = pgTable("menu_items", {
   tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
   prepMinutes: integer("prep_minutes").notNull().default(20),
   available: boolean("available").notNull().default(true),
+  // Whether the customer sees a "Notes for the kitchen" textarea on this
+  // dish's detail dialog. Off for items where notes don't apply (e.g. drinks).
+  notesEnabled: boolean("notes_enabled").notNull().default(true),
+  // Optional placeholder shown inside the notes textarea. Empty falls back to
+  // a generic line.
+  notesPlaceholder: text("notes_placeholder").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

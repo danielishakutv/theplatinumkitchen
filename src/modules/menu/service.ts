@@ -49,6 +49,8 @@ function rowToItem(row: MenuItemRow, addonGroups: AddonGroup[]): MenuItem {
     tags: (row.tags as MenuItemTag[]) ?? [],
     prepMinutes: row.prepMinutes,
     available: row.available,
+    notesEnabled: row.notesEnabled,
+    notesPlaceholder: row.notesPlaceholder,
     addonGroups,
   };
 }
@@ -216,6 +218,8 @@ export async function createItem(
       tags: data.tags,
       prepMinutes: data.prepMinutes,
       available: data.available,
+      notesEnabled: data.notesEnabled,
+      notesPlaceholder: data.notesPlaceholder,
       sortOrder: data.sortOrder,
     })
     .returning();
@@ -266,6 +270,8 @@ export async function updateItem(
   if (data.tags !== undefined) patch.tags = data.tags;
   if (data.prepMinutes !== undefined) patch.prepMinutes = data.prepMinutes;
   if (data.available !== undefined) patch.available = data.available;
+  if (data.notesEnabled !== undefined) patch.notesEnabled = data.notesEnabled;
+  if (data.notesPlaceholder !== undefined) patch.notesPlaceholder = data.notesPlaceholder;
   if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
 
   if (Object.keys(patch).length > 0) {

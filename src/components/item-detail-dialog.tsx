@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,7 +45,7 @@ export function ItemDetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const groups = item.addonGroups ?? [];
+  const groups = useMemo(() => item.addonGroups ?? [], [item.addonGroups]);
   const [selection, setSelection] = useState<SelectionState>(() => buildInitialSelection(groups));
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
@@ -53,14 +53,22 @@ export function ItemDetailDialog({
   const addLine = useCart((s) => s.addLine);
   const openCart = useCart((s) => s.openCart);
 
-  // Reset state when opening for a fresh item
+  // Reset state when opening for a fresh item. lastResetKey tracks the
+  // (open, itemId) pair so the reset only fires on transitions, not on
+  // every render — preventing the cascading-render concern the lint rule
+  // is normally guarding against.
+  const lastResetKey = useRef<string>("");
   useEffect(() => {
+    const key = `${open ? "open" : "closed"}:${item.id}`;
+    if (key === lastResetKey.current) return;
+    lastResetKey.current = key;
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelection(buildInitialSelection(groups));
       setQuantity(1);
       setNotes("");
     }
-  }, [open, item.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, item.id, groups]);
 
   const selectedAddons = useMemo<CartLineAddon[]>(() => {
     const out: CartLineAddon[] = [];
@@ -170,19 +178,23 @@ export function ItemDetailDialog({
               </div>
             ) : null}
 
-            <div className="mt-7 space-y-2">
-              <Label htmlFor="notes" className="text-sm font-medium">
-                Notes for the kitchen
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder="No onions, extra crispy, etc."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="resize-none border-platinum-200 bg-platinum-50"
-                rows={2}
-              />
-            </div>
+            {item.notesEnabled !== false ? (
+              <div className="mt-7 space-y-2">
+                <Label htmlFor="notes" className="text-sm font-medium">
+                  Notes for the kitchen
+                </Label>
+                <Textarea
+                  id="notes"
+                  placeholder={
+                    item.notesPlaceholder?.trim() || "No onions, extra crispy, etc."
+                  }
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="resize-none border-platinum-200 bg-platinum-50"
+                  rows={2}
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="border-t border-platinum-200 bg-platinum-50/60 px-6 py-4 sm:px-7">

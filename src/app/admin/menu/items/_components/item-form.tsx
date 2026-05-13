@@ -33,6 +33,7 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [available, setAvailable] = useState(item?.available ?? true);
+  const [notesEnabled, setNotesEnabled] = useState(item?.notesEnabled ?? true);
   const [categorySlug, setCategorySlug] = useState(
     item?.category ?? categories[0]?.slug ?? "",
   );
@@ -54,6 +55,7 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
     setError(null);
     const fd = new FormData(e.currentTarget);
     fd.set("available", available ? "on" : "");
+    fd.set("notesEnabled", notesEnabled ? "on" : "");
     fd.set("categorySlug", categorySlug);
     fd.delete("addonGroupIds");
     for (const id of selectedAddonIds) fd.append("addonGroupIds", id);
@@ -331,6 +333,40 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
               </div>
             </div>
           )}
+        </Section>
+
+        <Section
+          title="Customer notes"
+          description="The free-text field where customers can ask for special handling (e.g. no onions)."
+        >
+          <label className="flex items-center gap-3 cursor-pointer rounded-2xl border border-platinum-200 bg-platinum-50/40 p-4">
+            <Checkbox
+              checked={notesEnabled}
+              onCheckedChange={(v) => setNotesEnabled(v === true)}
+            />
+            <div>
+              <p className="text-sm font-medium">Show notes field on this dish</p>
+              <p className="text-xs text-muted-foreground">
+                Turn off for items where notes don&apos;t make sense (e.g. bottled drinks).
+              </p>
+            </div>
+          </label>
+
+          <Field
+            label="Notes placeholder"
+            htmlFor="notesPlaceholder"
+            hint="Hint text shown inside the empty textarea. Defaults to a generic line if blank."
+          >
+            <Input
+              id="notesPlaceholder"
+              name="notesPlaceholder"
+              defaultValue={item?.notesPlaceholder ?? ""}
+              placeholder="No onions, extra crispy, etc."
+              maxLength={200}
+              className="h-11"
+              disabled={!notesEnabled}
+            />
+          </Field>
         </Section>
 
         <Section

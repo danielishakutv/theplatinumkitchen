@@ -44,6 +44,11 @@ export interface MenuItem {
   tags?: MenuItemTag[];
   prepMinutes: number;
   available: boolean;
+  // Customer notes field on the dish detail dialog. Optional in the type so
+  // hand-authored data (e.g. seed) can omit them; the DB layer always
+  // populates them via column defaults.
+  notesEnabled?: boolean;
+  notesPlaceholder?: string;
   addonGroups?: AddonGroup[];
 }
 
