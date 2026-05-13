@@ -27,8 +27,11 @@ services:
       AUTH_TRUST_HOST: "true"
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Platinum Kitchen}
     ports:
-      # Bound to localhost only — Nginx on the host is the public entry point.
-      - "127.0.0.1:3000:3000"
+      # Bound to localhost only — the host's web server (Apache here) is the
+      # public entry point and reverse-proxies to this port. The container
+      # itself always listens on 3000 internally; the left number is the host
+      # port and is what you change per-instance when running multiple apps.
+      - "127.0.0.1:3002:3000"
     networks:
       - pk-net
 
