@@ -4,64 +4,83 @@ import { ArrowRight, Bike, ChefHat, Receipt, MessageCircle, MapPin, Clock } from
 import { Button } from "@/components/ui/button";
 import { MenuItemCard } from "@/components/menu-item-card";
 import { listItems, type MenuItem } from "@/modules/menu";
+import { getSettings, type Settings } from "@/modules/settings";
 
-// Reads from the database (featured section), so we render on demand instead
-// of at build time (when DATABASE_URL isn't available inside the Docker build).
+// Reads from the database (featured section + site settings), so we render on
+// demand instead of at build time (when DATABASE_URL isn't available inside the
+// Docker build).
 export const dynamic = "force-dynamic";
 
-const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1574484284002-952d92456975?w=1600&q=85&auto=format&fit=crop";
-
 export default async function HomePage() {
-  const items = await listItems();
+  const [items, settings] = await Promise.all([listItems(), getSettings()]);
   const featured = items
     .filter((i) => i.tags?.includes("chef's-pick") && i.available)
     .slice(0, 4);
 
   return (
     <>
-      <Hero />
+      <Hero settings={settings} />
       <Featured items={featured} />
       <HowItWorks />
-      <Story />
-      <VisitUs />
+      <Story settings={settings} />
+      <VisitUs settings={settings} />
       <CTAStrip />
     </>
   );
 }
 
-function Hero() {
+function whatsappOrderLink(settings: Settings): string | null {
+  const num = settings.whatsappPhone.replace(/[^0-9]/g, "");
+  if (!num) return null;
+  const text = `Hello ${settings.restaurantName || "team"}, I'd like to place an order`;
+  return `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+}
+
+function Hero({ settings }: { settings: Settings }) {
+  const heroImage = settings.heroImageUrl;
+  const waLink = whatsappOrderLink(settings);
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <Image
-          src={HERO_IMAGE}
-          alt=""
-          fill
-          priority
-          className="object-cover opacity-90"
-          sizes="100vw"
-        />
+        {heroImage ? (
+          <Image
+            src={heroImage}
+            alt=""
+            fill
+            priority
+            className="object-cover opacity-90"
+            sizes="100vw"
+          />
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/85 to-background" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 pb-20 pt-14 sm:px-6 sm:pt-20 lg:px-8 lg:pb-32 lg:pt-28">
         <div className="max-w-2xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-platinum-200 bg-card/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Now serving across Abuja
-          </span>
+          {settings.heroBadge ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-platinum-200 bg-card/70 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              {settings.heroBadge}
+            </span>
+          ) : null}
 
           <h1 className="text-balance mt-6 font-display text-5xl font-medium leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
-            A quiet revolution
-            <br />
-            <span className="italic text-primary">of Nigerian flavour.</span>
+            {settings.heroHeadline}
+            {settings.heroHeadlineAccent ? (
+              <>
+                <br />
+                <span className="italic text-primary">
+                  {settings.heroHeadlineAccent}
+                </span>
+              </>
+            ) : null}
           </h1>
 
-          <p className="text-balance mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
-            Heritage recipes prepared with patience, plated with care, and
-            delivered to your door — six days a week.
-          </p>
+          {settings.heroSubheadline ? (
+            <p className="text-balance mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
+              {settings.heroSubheadline}
+            </p>
+          ) : null}
 
           <div className="mt-9 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="h-12 rounded-full px-7 text-base shadow-lg shadow-primary/20">
@@ -69,39 +88,22 @@ function Hero() {
                 Browse the menu <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
             </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="h-12 rounded-full border-platinum-300 bg-card/70 px-6 text-base backdrop-blur"
-            >
-              <a
-                href="https://wa.me/2348000000000?text=Hello%20Platinum%20Kitchen%2C%20I%27d%20like%20to%20place%20an%20order"
-                target="_blank"
-                rel="noopener noreferrer"
+            {waLink ? (
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-12 rounded-full border-platinum-300 bg-card/70 px-6 text-base backdrop-blur"
               >
-                <MessageCircle className="mr-1.5 h-4 w-4" /> Order on WhatsApp
-              </a>
-            </Button>
+                <a href={waLink} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="mr-1.5 h-4 w-4" /> Order on WhatsApp
+                </a>
+              </Button>
+            ) : null}
           </div>
-
-          <dl className="mt-12 grid grid-cols-3 gap-x-6 gap-y-2 max-w-md">
-            <Stat label="Years of tradition" value="12+" />
-            <Stat label="Avg delivery" value="35 min" />
-            <Stat label="On the menu" value="40+ dishes" />
-          </dl>
         </div>
       </div>
     </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 border-l border-platinum-300/70 pl-3 first:border-l-0 first:pl-0">
-      <dd className="font-display text-2xl font-semibold tabular-nums">{value}</dd>
-      <dt className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{label}</dt>
-    </div>
   );
 }
 
@@ -156,7 +158,7 @@ function HowItWorks() {
       Icon: Bike,
       title: "We bring it warm",
       body:
-        "Our riders cover Abuja in roughly 35 minutes, with insulated bags so it lands the way it left.",
+        "Our riders cover the city in roughly 35 minutes, with insulated bags so it lands the way it left.",
     },
   ];
 
@@ -194,18 +196,24 @@ function HowItWorks() {
   );
 }
 
-function Story() {
+function Story({ settings }: { settings: Settings }) {
+  const paragraphs = settings.storyBody
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
   return (
     <section id="about" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
       <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
         <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-platinum-100">
-          <Image
-            src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1000&q=85&auto=format&fit=crop"
-            alt="Inside the Platinum Kitchen"
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
-          />
+          {settings.storyImageUrl ? (
+            <Image
+              src={settings.storyImageUrl}
+              alt={`Inside ${settings.restaurantName}`}
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+            />
+          ) : null}
         </div>
 
         <div className="space-y-5">
@@ -213,45 +221,47 @@ function Story() {
             Our story
           </span>
           <h2 className="text-balance font-display text-4xl font-medium leading-tight tracking-tight sm:text-5xl">
-            We took our time, and you&apos;ll taste it.
+            {settings.storyHeading}
           </h2>
-          <p className="text-lg leading-relaxed text-muted-foreground">
-            Platinum Kitchen began as a Sunday tradition in a small Abuja flat —
-            a single pot of jollof, a few aunties, and the kind of arguments
-            only the right pepper can settle.
-          </p>
-          <p className="leading-relaxed text-muted-foreground">
-            Today we serve across the city, but the rules haven&apos;t changed: the
-            stock is made from scratch, the chicken is grilled over real
-            charcoal, and nothing leaves the kitchen if it doesn&apos;t taste like
-            home.
-          </p>
-          <div className="grid grid-cols-3 gap-6 pt-4">
-            <Stat label="Dishes daily" value="200+" />
-            <Stat label="Repeat customers" value="68%" />
-            <Stat label="Stars on Google" value="4.9" />
-          </div>
+          {paragraphs.map((p, idx) => (
+            <p
+              key={idx}
+              className={
+                idx === 0
+                  ? "text-lg leading-relaxed text-muted-foreground"
+                  : "leading-relaxed text-muted-foreground"
+              }
+            >
+              {p}
+            </p>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-function VisitUs() {
+function VisitUs({ settings }: { settings: Settings }) {
+  const addressLines = [
+    settings.addressStreet,
+    [settings.addressArea, settings.addressCity, settings.addressState]
+      .filter(Boolean)
+      .join(", "),
+  ].filter(Boolean);
   return (
     <section id="hours" className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
       <div className="grid gap-6 md:grid-cols-2">
         <Card
           Icon={Clock}
           eyebrow="Open today"
-          title="11:00 — 22:00"
-          body="Mon–Thu · 11:00 — 22:00 · Fri–Sat 11:00 — 23:00 · Sun 13:00 — 22:00"
+          title={settings.hoursToday || "By appointment"}
+          body={settings.hoursSummary || "Hours coming soon."}
         />
         <Card
           Icon={MapPin}
           eyebrow="Find us"
-          title="Wuse 2, Abuja"
-          body="12 Aminu Kano Crescent · Beside Sahad Stores · Free parking after 6pm"
+          title={settings.addressArea || settings.addressCity || "Find us"}
+          body={addressLines.join(" · ") || "Address coming soon."}
         />
       </div>
     </section>
@@ -311,14 +321,6 @@ function CTAStrip() {
               className="h-12 rounded-full bg-white px-7 text-base font-medium text-emerald-900 hover:bg-emerald-50"
             >
               <Link href="/menu">Browse the menu</Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="h-12 rounded-full border-white/30 bg-white/5 px-7 text-base text-white backdrop-blur hover:bg-white/10 hover:text-white"
-            >
-              <a href="tel:+2348000000000">Call us</a>
             </Button>
           </div>
         </div>

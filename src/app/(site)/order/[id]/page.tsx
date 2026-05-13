@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getOrderById, type Order, type OrderStatus } from "@/modules/orders";
+import { getSettings, type Settings } from "@/modules/settings";
 import { formatNaira, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +26,7 @@ export default async function OrderConfirmationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = await getOrderById(id);
+  const [order, settings] = await Promise.all([getOrderById(id), getSettings()]);
   if (!order) notFound();
 
   return (
@@ -33,7 +34,7 @@ export default async function OrderConfirmationPage({
       <Hero order={order} />
       <Timeline status={order.status} fulfilment={order.fulfilment} />
       <Summary order={order} />
-      <Actions order={order} />
+      <Actions order={order} settings={settings} />
     </div>
   );
 }
@@ -301,8 +302,9 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-function Actions({ order }: { order: Order }) {
-  const text = `Hi! I just placed order ${order.number} with Platinum Kitchen.`;
+function Actions({ order, settings }: { order: Order; settings: Settings }) {
+  const waNumber = settings.whatsappPhone.replace(/[^0-9]/g, "");
+  const text = `Hi! I just placed order ${order.number} with ${settings.restaurantName || "Platinum Kitchen"}.`;
   return (
     <div className="mt-8 flex flex-wrap gap-3">
       <Button asChild size="lg" className="h-12 rounded-full px-6">
@@ -310,20 +312,22 @@ function Actions({ order }: { order: Order }) {
           <Receipt className="mr-2 h-4 w-4" /> View invoice
         </Link>
       </Button>
-      <Button
-        asChild
-        size="lg"
-        variant="outline"
-        className="h-12 rounded-full border-platinum-300 px-6"
-      >
-        <a
-          href={`https://wa.me/2348000000000?text=${encodeURIComponent(text)}`}
-          target="_blank"
-          rel="noopener noreferrer"
+      {waNumber ? (
+        <Button
+          asChild
+          size="lg"
+          variant="outline"
+          className="h-12 rounded-full border-platinum-300 px-6"
         >
-          <MessageCircle className="mr-2 h-4 w-4" /> Chat on WhatsApp
-        </a>
-      </Button>
+          <a
+            href={`https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MessageCircle className="mr-2 h-4 w-4" /> Chat on WhatsApp
+          </a>
+        </Button>
+      ) : null}
       <Button asChild variant="ghost" size="lg" className="h-12 rounded-full px-6">
         <Link href="/menu">Order again</Link>
       </Button>

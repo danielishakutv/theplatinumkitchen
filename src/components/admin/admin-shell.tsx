@@ -123,7 +123,7 @@ export function AdminShell({
           <div className="mt-auto space-y-1">
             {can(user, "settings:read") ? (
               <Link
-                href="#"
+                href="/admin/settings"
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent"
               >
                 <Settings className="h-4 w-4" />

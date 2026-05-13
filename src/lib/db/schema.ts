@@ -7,3 +7,5 @@ export * from "@/modules/users/schema";
 export * from "@/modules/auth/schema";
 export * from "@/modules/profiles/schema";
 export * from "@/modules/menu/schema";
+export * from "@/modules/orders/schema";
+export * from "@/modules/settings/schema";
