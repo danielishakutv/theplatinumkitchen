@@ -1,26 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
-import { SignInForm } from "./sign-in-form";
+import { SignUpForm } from "./sign-up-form";
 
 export const metadata: Metadata = {
-  title: "Sign in",
-  description: "Sign in to Platinum Kitchen.",
+  title: "Create your account",
+  description: "Sign up to track orders and reorder your favourites.",
 };
 
-export default async function SignInPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ from?: string; callbackUrl?: string }>;
-}) {
-  const { from, callbackUrl } = await searchParams;
-  const target = from ?? callbackUrl ?? "";
-  // The same credentials form serves both staff and customers — only the
-  // copy and the demo-account helper change based on where they're headed.
-  const isCustomer = target.startsWith("/account");
-
+export default function SignUpPage() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
@@ -39,40 +28,20 @@ export default async function SignInPage({
         <div className="rounded-3xl border border-platinum-200 bg-card p-7 shadow-2xl shadow-platinum-300/30 sm:p-9">
           <div className="space-y-2 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-              {isCustomer ? "Platinum Kitchen" : "Staff console"}
+              Platinum Kitchen
             </p>
             <h1 className="font-display text-3xl font-medium leading-tight">
-              Welcome back
+              Create your account
             </h1>
             <p className="text-sm text-muted-foreground">
-              {isCustomer
-                ? "Sign in to see your orders and reorder favourites."
-                : "Sign in to manage the kitchen."}
+              Track your orders and reorder favourites in a tap.
             </p>
           </div>
 
           <div className="mt-7">
-            <Suspense fallback={null}>
-              <SignInForm />
-            </Suspense>
+            <SignUpForm />
           </div>
         </div>
-
-        {isCustomer ? (
-          <p className="mt-5 text-center text-sm text-muted-foreground">
-            New here?{" "}
-            <Link
-              href="/sign-up"
-              className="font-medium text-primary hover:underline"
-            >
-              Create an account
-            </Link>
-          </p>
-        ) : (
-          <p className="mt-5 text-center text-xs text-muted-foreground">
-            Trouble signing in? Reach out to your manager.
-          </p>
-        )}
       </main>
     </div>
   );

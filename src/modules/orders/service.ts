@@ -293,6 +293,20 @@ export async function getOrderById(id: string): Promise<Order | null> {
   return rowToOrder(row, lines.get(row.id) ?? []);
 }
 
+// A signed-in customer's own order history. Scoped by userId — no permission
+// check, since the caller can only ever pass their own session user id.
+export async function listOrdersForUser(userId: string): Promise<Order[]> {
+  if (!userId) return [];
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.userId, userId))
+    .orderBy(desc(orders.createdAt))
+    .limit(100);
+  const lines = await loadLinesByOrderIds(rows.map((r) => r.id));
+  return rows.map((r) => rowToOrder(r, lines.get(r.id) ?? []));
+}
+
 export async function getOrderByNumber(number: string): Promise<Order | null> {
   const [row] = await db
     .select()

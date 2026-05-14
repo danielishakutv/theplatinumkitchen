@@ -21,7 +21,11 @@ const DEMO_PASSWORD = "platinum123";
 
 export function SignInForm() {
   const params = useSearchParams();
-  const from = params.get("from") ?? "/admin";
+  // Middleware sends unauthenticated users here with ?callbackUrl=...; our own
+  // links use ?from=... — accept either, default to the staff console.
+  const from =
+    params.get("from") ?? params.get("callbackUrl") ?? "/admin";
+  const isCustomer = from.startsWith("/account");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -129,6 +133,7 @@ export function SignInForm() {
         </Button>
       </form>
 
+      {isCustomer ? null : (
       <div className="rounded-2xl border border-dashed border-platinum-300 bg-platinum-100/50 p-4">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           Demo accounts
@@ -162,6 +167,16 @@ export function SignInForm() {
           ))}
         </ul>
       </div>
+      )}
+
+      {isCustomer ? (
+        <p className="text-center text-sm text-muted-foreground">
+          New here?{" "}
+          <Link href="/sign-up" className="font-medium text-primary hover:underline">
+            Create an account
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

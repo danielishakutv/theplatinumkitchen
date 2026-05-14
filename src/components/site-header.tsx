@@ -1,9 +1,22 @@
 import Link from "next/link";
+import { CircleUserRound } from "lucide-react";
+import { auth } from "@/lib/auth";
 import { BrandMark } from "@/components/brand-mark";
 import { CartButton } from "@/components/cart-button";
 import { Button } from "@/components/ui/button";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const session = await auth();
+  const isStaff = Boolean(session && session.user?.role !== "customer");
+
+  // Signed-in staff get a shortcut to the console; everyone else (signed-in
+  // customers or guests) lands in the customer account area / sign-in.
+  const account = session
+    ? isStaff
+      ? { href: "/admin", label: "Dashboard" }
+      : { href: "/account", label: "Account" }
+    : { href: "/sign-in?from=/account", label: "Sign in" };
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-platinum-200/70 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -23,9 +36,12 @@ export function SiteHeader() {
             asChild
             variant="ghost"
             size="sm"
-            className="hidden sm:inline-flex h-10 rounded-full px-4"
+            className="hidden h-10 rounded-full px-4 sm:inline-flex"
           >
-            <Link href="/admin">Sign in</Link>
+            <Link href={account.href}>
+              <CircleUserRound className="mr-1.5 h-4 w-4" />
+              {account.label}
+            </Link>
           </Button>
           <CartButton />
         </div>

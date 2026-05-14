@@ -10,8 +10,10 @@ export const authConfig = {
   trustHost: true,
   callbacks: {
     authorized({ auth, request }) {
-      const isAdmin = request.nextUrl.pathname.startsWith("/admin");
-      if (isAdmin) return Boolean(auth);
+      const path = request.nextUrl.pathname;
+      const isProtected =
+        path.startsWith("/admin") || path.startsWith("/account");
+      if (isProtected) return Boolean(auth);
       return true;
     },
   },

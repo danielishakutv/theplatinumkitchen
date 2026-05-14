@@ -39,6 +39,7 @@ export {
   getOrderById,
   getOrderByNumber,
   listOrders,
+  listOrdersForUser,
   updateOrderStatus,
   markOrderPaid,
   markOrderUnpaid,

@@ -5,7 +5,8 @@ export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: [
-    // Apply auth to all admin routes EXCEPT internal Next assets
+    // Staff console and customer account area — both require a session.
     "/admin/:path*",
+    "/account/:path*",
   ],
 };
