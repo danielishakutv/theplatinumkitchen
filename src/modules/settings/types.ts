@@ -4,6 +4,7 @@ export interface Settings {
   phone: string;
   whatsappPhone: string;
   email: string;
+  orderNotifyEmails: string;
   addressStreet: string;
   addressArea: string;
   addressCity: string;

@@ -6,9 +6,11 @@ import { menuAddonOptions, menuItems } from "@/modules/menu/schema";
 import { requirePermission, type ActorLike } from "@/modules/users/permissions";
 import {
   sendOrderReceivedEmail,
+  sendNewOrderStaffEmail,
   notifyStaff,
   notifyUser,
 } from "@/modules/notifications";
+import { getSettings, type Settings } from "@/modules/settings";
 import { appUrl } from "@/lib/url";
 import { formatNaira } from "@/lib/format";
 import {
@@ -75,6 +77,17 @@ function rowToOrder(row: OrderRow, lines: OrderLine[]): Order {
     paystackReference: row.paystackReference ?? undefined,
     notes: row.notes ?? undefined,
   };
+}
+
+// Recipients for the "new order" staff email: the restaurant contact email
+// plus any extra inboxes configured in Settings. Lower-cased and de-duped.
+function collectStaffOrderRecipients(settings: Settings): string[] {
+  const seen = new Set<string>();
+  for (const entry of [settings.email, ...settings.orderNotifyEmails.split(/[\n,]/)]) {
+    const email = entry.trim().toLowerCase();
+    if (email) seen.add(email);
+  }
+  return [...seen];
 }
 
 function lineRowToLine(row: OrderLineRow): OrderLine {
@@ -258,6 +271,24 @@ export async function createOrderFromCart(input: {
   const created = await getOrderById(orderId);
   if (!created) throw new OrderServiceError("ORDER_NOT_FOUND");
 
+  const fulfilmentLabel =
+    created.fulfilment === "delivery"
+      ? "Delivery"
+      : created.fulfilment === "pickup"
+        ? "Pickup"
+        : "Dine in";
+  const itemCount = created.lines.reduce((s, l) => s + l.quantity, 0);
+  // Per-line totals — shared by both the customer and the staff emails.
+  const emailLines = created.lines.map((line) => ({
+    name: line.itemName,
+    quantity: line.quantity,
+    addons: line.addons.map((a) => a.name),
+    unitTotalFormatted: formatNaira(
+      (line.unitPrice + line.addons.reduce((s, a) => s + a.priceDelta, 0)) *
+        line.quantity,
+    ),
+  }));
+
   // Fire-and-forget the customer confirmation email. Don't block the order
   // creation response — any Resend error gets logged inside the notifications
   // module but doesn't roll back the order.
@@ -267,23 +298,10 @@ export async function createOrderFromCart(input: {
       customerFirstName: created.customer.name.split(" ")[0] || created.customer.name,
       orderNumber: created.number,
       totalFormatted: formatNaira(created.total),
-      fulfilmentLabel:
-        created.fulfilment === "delivery"
-          ? "Delivery"
-          : created.fulfilment === "pickup"
-            ? "Pickup"
-            : "Dine in",
+      fulfilmentLabel,
       paymentLabel: PAYMENT_METHOD_LABEL[created.paymentMethod],
       trackingUrl: appUrl(`/order/${created.id}`),
-      lines: created.lines.map((line) => ({
-        name: line.itemName,
-        quantity: line.quantity,
-        addons: line.addons.map((a) => a.name),
-        unitTotalFormatted: formatNaira(
-          (line.unitPrice + line.addons.reduce((s, a) => s + a.priceDelta, 0)) *
-            line.quantity,
-        ),
-      })),
+      lines: emailLines,
     }).catch((err) => console.error("[orders] order email failed", err));
   }
 
@@ -292,12 +310,31 @@ export async function createOrderFromCart(input: {
   notifyStaff({
     type: "order_placed",
     title: `New order ${created.number}`,
-    body: `${formatNaira(created.total)} · ${created.lines.reduce(
-      (s, l) => s + l.quantity,
-      0,
-    )} items · ${created.fulfilment.replace(/_/g, " ")}`,
+    body: `${formatNaira(created.total)} · ${itemCount} items · ${created.fulfilment.replace(/_/g, " ")}`,
     orderId: created.id,
   }).catch((err) => console.error("[orders] staff notify failed", err));
+
+  // Email the kitchen/admin inbox(es): the restaurant contact email plus any
+  // extra addresses configured in Settings. Fire-and-forget — if Settings
+  // can't be read or Resend fails, the order still stands.
+  getSettings()
+    .then((settings) => {
+      const recipients = collectStaffOrderRecipients(settings);
+      if (recipients.length === 0) return;
+      return sendNewOrderStaffEmail({
+        to: recipients,
+        orderNumber: created.number,
+        totalFormatted: formatNaira(created.total),
+        fulfilmentLabel,
+        paymentLabel: PAYMENT_METHOD_LABEL[created.paymentMethod],
+        customerName: created.customer.name,
+        customerPhone: created.customer.phone,
+        itemCount,
+        lines: emailLines,
+        manageUrl: appUrl(`/admin/orders/${created.id}`),
+      });
+    })
+    .catch((err) => console.error("[orders] staff order email failed", err));
 
   return { order: created };
 }

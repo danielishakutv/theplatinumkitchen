@@ -6,6 +6,7 @@ import { users } from "@/modules/users/schema";
 import { getFromAddress, getResendClient, isConfigured } from "./client";
 import {
   renderEmailChangeVerification,
+  renderNewOrderForStaff,
   renderOrderReceived,
   renderPasswordReset,
   type OrderEmailLine,
@@ -21,7 +22,7 @@ interface SendResult {
 }
 
 async function send(
-  to: string,
+  to: string | string[],
   subject: string,
   html: string,
   text: string,
@@ -83,6 +84,35 @@ export async function sendOrderReceivedEmail(args: {
     paymentLabel: args.paymentLabel,
     trackingUrl: args.trackingUrl,
     lines: args.lines,
+  });
+  return send(args.to, subject, html, text);
+}
+
+// Sent to the kitchen/admin inbox(es) when a new order is placed. `to` is the
+// already-deduped recipient list — callers pass an empty array to skip.
+export async function sendNewOrderStaffEmail(args: {
+  to: string[];
+  orderNumber: string;
+  totalFormatted: string;
+  fulfilmentLabel: string;
+  paymentLabel: string;
+  customerName: string;
+  customerPhone: string;
+  itemCount: number;
+  lines: OrderEmailLine[];
+  manageUrl: string;
+}): Promise<SendResult> {
+  if (args.to.length === 0) return { delivered: false };
+  const { subject, html, text } = renderNewOrderForStaff({
+    orderNumber: args.orderNumber,
+    totalFormatted: args.totalFormatted,
+    fulfilmentLabel: args.fulfilmentLabel,
+    paymentLabel: args.paymentLabel,
+    customerName: args.customerName,
+    customerPhone: args.customerPhone,
+    itemCount: args.itemCount,
+    lines: args.lines,
+    manageUrl: args.manageUrl,
   });
   return send(args.to, subject, html, text);
 }

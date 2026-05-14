@@ -15,6 +15,9 @@ export const settings = pgTable("settings", {
   // wa.me requires intl format without "+" or spaces (e.g. 2348000000000).
   whatsappPhone: text("whatsapp_phone").notNull().default(""),
   email: text("email").notNull().default(""),
+  // Extra inboxes that get the "new order" email alongside the contact email
+  // above. Stored as a comma/newline-separated list; parsed at send time.
+  orderNotifyEmails: text("order_notify_emails").notNull().default(""),
 
   // Address
   addressStreet: text("address_street").notNull().default(""),

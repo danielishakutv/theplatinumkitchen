@@ -102,6 +102,20 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             className="h-11"
           />
         </Field>
+        <Field
+          label="New-order alert emails"
+          htmlFor="orderNotifyEmails"
+          hint="Inboxes that get an email on every new order, alongside the contact email above. Separate multiple addresses with commas or new lines."
+        >
+          <Textarea
+            id="orderNotifyEmails"
+            name="orderNotifyEmails"
+            rows={2}
+            defaultValue={settings.orderNotifyEmails}
+            maxLength={1000}
+            placeholder="kitchen@theplatinumkitchen.com, manager@theplatinumkitchen.com"
+          />
+        </Field>
       </Section>
 
       <Section

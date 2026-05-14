@@ -139,6 +139,63 @@ export function renderOrderReceived(args: {
   return { subject, html, text };
 }
 
+export function renderNewOrderForStaff(args: {
+  orderNumber: string;
+  totalFormatted: string;
+  fulfilmentLabel: string;
+  paymentLabel: string;
+  customerName: string;
+  customerPhone: string;
+  itemCount: number;
+  lines: OrderEmailLine[];
+  manageUrl: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `New order ${args.orderNumber} — ${args.totalFormatted}`;
+  const lineRows = args.lines
+    .map(
+      (l) => `
+        <tr>
+          <td style="padding:10px 0;font-size:14px;color:${TEXT};">
+            <strong>${escapeHtml(l.name)}</strong>
+            ${l.addons.length ? `<div style="font-size:12px;color:${MUTED};margin-top:2px">${escapeHtml(l.addons.join(" · "))}</div>` : ""}
+          </td>
+          <td style="padding:10px 0;font-size:13px;color:${MUTED};text-align:right;white-space:nowrap;">
+            ×${l.quantity}
+          </td>
+          <td style="padding:10px 0;font-size:14px;color:${TEXT};text-align:right;white-space:nowrap;">
+            ${escapeHtml(l.unitTotalFormatted)}
+          </td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  const html = shell({
+    title: subject,
+    preheader: `${args.customerName} · ${args.totalFormatted} · ${args.fulfilmentLabel}`,
+    body: `
+      <h1>New order — ${escapeHtml(args.orderNumber)}</h1>
+      <p>A new order just came in. ${args.itemCount} item${args.itemCount === 1 ? "" : "s"} · ${escapeHtml(args.fulfilmentLabel)} · ${escapeHtml(args.paymentLabel)}.</p>
+      <p class="muted">Customer: <strong style="color:${TEXT}">${escapeHtml(args.customerName)}</strong> · ${escapeHtml(args.customerPhone)}</p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;margin:16px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;">
+        ${lineRows}
+      </table>
+      <p style="font-size:16px;margin:4px 0;"><strong>Total: ${escapeHtml(args.totalFormatted)}</strong></p>
+      <p><a class="btn" href="${escapeHtml(args.manageUrl)}">Manage order</a></p>
+      <p class="muted">Or paste this URL into your browser:<br />${escapeHtml(args.manageUrl)}</p>
+    `,
+  });
+
+  const textLines = args.lines
+    .map(
+      (l) =>
+        `${l.quantity}× ${l.name}${l.addons.length ? ` (${l.addons.join(", ")})` : ""} — ${l.unitTotalFormatted}`,
+    )
+    .join("\n");
+  const text = `New order ${args.orderNumber}\n\n${args.customerName} · ${args.customerPhone}\n${args.itemCount} item(s) · ${args.fulfilmentLabel} · ${args.paymentLabel}\n\n${textLines}\n\nTotal: ${args.totalFormatted}\n\nManage: ${args.manageUrl}`;
+  return { subject, html, text };
+}
+
 export function renderEmailChangeVerification(args: {
   verifyUrl: string;
   ttlMinutes: number;

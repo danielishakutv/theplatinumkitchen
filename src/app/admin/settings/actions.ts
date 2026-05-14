@@ -44,6 +44,7 @@ export async function saveSettingsAction(formData: FormData): Promise<ActionResu
     phone: field(formData.get("phone")),
     whatsappPhone: field(formData.get("whatsappPhone")),
     email: field(formData.get("email")),
+    orderNotifyEmails: field(formData.get("orderNotifyEmails")),
     addressStreet: field(formData.get("addressStreet")),
     addressArea: field(formData.get("addressArea")),
     addressCity: field(formData.get("addressCity")),

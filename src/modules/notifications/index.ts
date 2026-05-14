@@ -8,6 +8,7 @@ export {
   sendPasswordResetEmail,
   sendEmailChangeVerification,
   sendOrderReceivedEmail,
+  sendNewOrderStaffEmail,
 } from "./service";
 export { isConfigured as isEmailConfigured } from "./client";
 

@@ -15,6 +15,23 @@ export const updateSettingsSchema = z.object({
   email: z
     .union([z.string().trim().toLowerCase().email().max(254), z.literal("")])
     .optional(),
+  // Comma/newline-separated list of extra inboxes for new-order alerts.
+  // Each non-empty token must be a valid email; blank is allowed.
+  orderNotifyEmails: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .refine(
+      (v) =>
+        !v ||
+        v
+          .split(/[\n,]/)
+          .map((e) => e.trim())
+          .filter(Boolean)
+          .every((e) => z.string().email().safeParse(e).success),
+      "One or more new-order alert emails are invalid.",
+    ),
 
   addressStreet: text(200).optional(),
   addressArea: text(120).optional(),
