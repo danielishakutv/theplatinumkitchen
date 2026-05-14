@@ -172,7 +172,7 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
         </Section>
 
         <Section
-          title="Pricing &amp; logistics"
+          title="Pricing & logistics"
           description="Price in Naira, expected prep time, and which category this lives under."
         >
           <div className="grid gap-4 sm:grid-cols-3">
@@ -223,7 +223,7 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
         </Section>
 
         <Section
-          title="Image &amp; tags"
+          title="Image & tags"
           description="The hero image and any badges (chef's pick, spicy, vegan, etc.)."
         >
           <ImageUploadField
@@ -249,7 +249,7 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
         </Section>
 
         <Section
-          title="Variations &amp; add-ons"
+          title="Variations & add-ons"
           description="These are the choices customers will see on the dish detail page. Tick which groups apply, and tap a group to edit its options."
         >
           {addonGroups.length === 0 ? (
@@ -460,10 +460,9 @@ function Section({
   return (
     <section className="rounded-3xl border border-platinum-200 bg-card p-5 sm:p-7">
       <header className="mb-5 space-y-1">
-        <h2
-          className="font-display text-lg font-medium tracking-tight"
-          dangerouslySetInnerHTML={{ __html: title }}
-        />
+        <h2 className="font-display text-lg font-medium tracking-tight">
+          {title}
+        </h2>
         {description ? (
           <p className="text-sm text-muted-foreground">{description}</p>
         ) : null}

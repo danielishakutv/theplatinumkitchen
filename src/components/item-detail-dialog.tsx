@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import type { AddonGroup, AddonOption, MenuItem } from "@/modules/menu";
 import { useCart, type CartLineAddon } from "@/modules/cart";
 import { formatNaira } from "@/lib/format";

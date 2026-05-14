@@ -2,7 +2,6 @@
 
 import {
   AuthError,
-  AUTH_ERROR_STATUS,
   resetPassword,
   type AuthErrorCode,
 } from "@/modules/auth";
@@ -43,7 +42,6 @@ export async function resetPasswordAction(
       };
     }
     console.error("[reset-password] unexpected error", err);
-    void AUTH_ERROR_STATUS; // referenced for type completeness
     return { ok: false, error: "Something went wrong. Try again." };
   }
 }

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Plus, Mail, MoreHorizontal, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

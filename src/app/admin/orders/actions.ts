@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import {
-  ORDER_ERROR_STATUS,
   OrderServiceError,
   markOrderPaid,
   markOrderUnpaid,
@@ -24,7 +23,6 @@ async function requireUser() {
 
 function toError(err: unknown): ActionResult {
   if (err instanceof OrderServiceError) {
-    void ORDER_ERROR_STATUS;
     const map: Record<string, string> = {
       ORDER_INVALID_INPUT: "Some details don't look right. Check and try again.",
       ORDER_NOT_FOUND: "That order doesn't exist.",

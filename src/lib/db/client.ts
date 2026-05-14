@@ -5,9 +5,7 @@ import * as schema from "./schema";
 // Lazy-init so building the app doesn't require a live DATABASE_URL.
 // The first DB call validates the env var; missing → clear runtime error.
 declare global {
-  // eslint-disable-next-line no-var
   var __pkPgClient: ReturnType<typeof postgres> | undefined;
-  // eslint-disable-next-line no-var
   var __pkDb: ReturnType<typeof drizzle<typeof schema>> | undefined;
 }
 

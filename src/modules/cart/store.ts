@@ -44,7 +44,7 @@ const sameLine = (a: CartLine, b: Omit<CartLine, "id">) => {
 
 export const useCart = create<CartState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       lines: [],
       fulfilment: "delivery",
       open: false,

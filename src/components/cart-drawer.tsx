@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Trash2, ShoppingBag, X, Bike, Store, Utensils } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, Bike, Store, Utensils } from "lucide-react";
 import {
   Sheet,
   SheetContent,

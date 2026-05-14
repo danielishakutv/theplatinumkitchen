@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import {
-  ORDER_ERROR_STATUS,
   OrderServiceError,
   createOrderFromCart,
   type PlaceOrderInput,
@@ -37,7 +36,6 @@ export async function placeOrderAction(
     return { ok: true, orderId: order.id, orderNumber: order.number };
   } catch (err) {
     if (err instanceof OrderServiceError) {
-      void ORDER_ERROR_STATUS;
       const map: Record<string, string> = {
         ORDER_INVALID_INPUT: "Some order details aren't right — please review and try again.",
         ORDER_ITEM_NOT_FOUND: "One of the dishes in your cart is no longer on the menu.",

@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import {
-  MENU_ERROR_STATUS,
   MenuServiceError,
   createItem,
   deleteItem,
@@ -27,7 +26,6 @@ async function requireUser() {
 
 function toError(err: unknown): ActionResult {
   if (err instanceof MenuServiceError) {
-    void MENU_ERROR_STATUS;
     const map: Record<string, string> = {
       MENU_INVALID_INPUT: "Some fields don't look right. Check them and try again.",
       MENU_NOT_FOUND: "That dish doesn't exist.",
