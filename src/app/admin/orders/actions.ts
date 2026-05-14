@@ -4,13 +4,17 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import {
   OrderServiceError,
+  createOrderFromCart,
   deleteOrder,
   markOrderPaid,
   markOrderUnpaid,
+  updateOrder,
   updateOrderStatus,
+  type AdminUpdateOrderInput,
   type OrderStatus,
+  type PlaceOrderInput,
 } from "@/modules/orders";
-import { PermissionError } from "@/modules/users";
+import { PermissionError, requirePermission } from "@/modules/users";
 
 export interface ActionResult {
   ok: boolean;
@@ -81,6 +85,47 @@ export async function markUnpaidAction(id: string): Promise<ActionResult> {
   if (!user) return { ok: false, error: "Sign in first." };
   try {
     await markOrderUnpaid(user, id);
+    revalidateOrderPaths(id);
+    return { ok: true };
+  } catch (err) {
+    return toError(err);
+  }
+}
+
+// Places an order from the admin panel (phone-in / walk-in). Reuses the same
+// pricing + invoice-numbering path as customer checkout, but skips the
+// "new order" staff email — whoever placed it doesn't need to email
+// themselves. Returns the new order id so the caller can open it.
+export async function createOrderAction(
+  input: PlaceOrderInput,
+): Promise<ActionResult & { orderId?: string }> {
+  const user = await requireUser();
+  if (!user) return { ok: false, error: "Sign in first." };
+  try {
+    requirePermission(user, "orders:write");
+    const { order } = await createOrderFromCart({
+      payload: input,
+      emailStaffOnCreate: false,
+    });
+    revalidatePath("/admin");
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/kitchen");
+    return { ok: true, orderId: order.id };
+  } catch (err) {
+    return toError(err);
+  }
+}
+
+// Edits an existing order's contents — items, customer, fulfilment, address,
+// payment method, notes. Status and payment status are untouched here.
+export async function updateOrderAction(
+  id: string,
+  input: AdminUpdateOrderInput,
+): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user) return { ok: false, error: "Sign in first." };
+  try {
+    await updateOrder(user, id, input);
     revalidateOrderPaths(id);
     return { ok: true };
   } catch (err) {
