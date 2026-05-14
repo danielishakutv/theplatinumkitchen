@@ -9,6 +9,7 @@ export type Permission =
   | "orders:read"
   | "orders:write"
   | "orders:cancel"
+  | "orders:delete"
   | "kitchen:advance"
   | "invoices:read"
   | "invoices:mark_paid"
@@ -25,6 +26,7 @@ const ROLE_PERMS: Record<UserRole, Set<Permission>> = {
     "orders:read",
     "orders:write",
     "orders:cancel",
+    "orders:delete",
     "kitchen:advance",
     "invoices:read",
     "invoices:mark_paid",
@@ -39,6 +41,7 @@ const ROLE_PERMS: Record<UserRole, Set<Permission>> = {
     "orders:read",
     "orders:write",
     "orders:cancel",
+    "orders:delete",
     "kitchen:advance",
     "invoices:read",
     "invoices:mark_paid",

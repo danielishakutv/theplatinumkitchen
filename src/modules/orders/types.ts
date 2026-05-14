@@ -77,7 +77,8 @@ export type OrderError =
   | "ORDER_ITEM_NOT_FOUND"
   | "ORDER_ITEM_UNAVAILABLE"
   | "ORDER_ADDON_NOT_FOUND"
-  | "ORDER_STATUS_INVALID";
+  | "ORDER_STATUS_INVALID"
+  | "ORDER_NOT_EDITABLE";
 
 export class OrderServiceError extends Error {
   constructor(
@@ -96,6 +97,7 @@ export const ORDER_ERROR_STATUS: Record<OrderError, number> = {
   ORDER_ITEM_UNAVAILABLE: 409,
   ORDER_ADDON_NOT_FOUND: 422,
   ORDER_STATUS_INVALID: 409,
+  ORDER_NOT_EDITABLE: 409,
 };
 
 // Status transition rules. Empty array = terminal state.

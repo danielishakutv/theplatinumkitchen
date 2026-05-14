@@ -60,3 +60,21 @@ export const updateStatusSchema = z.object({
   status: orderStatusEnum,
 });
 export type UpdateStatusInput = z.infer<typeof updateStatusSchema>;
+
+// Admin order edit. Same building blocks as placing an order, but payment
+// *status* stays managed by the dedicated mark-paid/unpaid actions, so it's
+// deliberately not part of this payload.
+export const adminUpdateOrderSchema = z
+  .object({
+    lines: z.array(cartLineSchema).min(1).max(50),
+    customer: customerSchema,
+    fulfilment: fulfilmentEnum,
+    address: addressSchema.optional(),
+    paymentMethod: paymentMethodEnum,
+    notes: z.string().trim().max(1000).optional(),
+  })
+  .refine(
+    (v) => v.fulfilment !== "delivery" || v.address !== undefined,
+    { message: "Delivery orders need an address", path: ["address"] },
+  );
+export type AdminUpdateOrderInput = z.infer<typeof adminUpdateOrderSchema>;

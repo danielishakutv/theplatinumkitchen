@@ -21,8 +21,10 @@ import {
   type OrderRow,
 } from "./schema";
 import {
+  adminUpdateOrderSchema,
   placeOrderSchema,
   updateStatusSchema,
+  type AdminUpdateOrderInput,
   type PlaceOrderInput,
   type UpdateStatusInput,
 } from "./validation";
@@ -30,6 +32,7 @@ import {
   NEXT_STATUSES,
   OrderServiceError,
   PAYMENT_METHOD_LABEL,
+  type FulfilmentMethod,
   type Order,
   type OrderLine,
   type OrderLineAddon,
@@ -120,6 +123,110 @@ async function loadLinesByOrderIds(
   return out;
 }
 
+// Prices a set of cart lines exactly the way order creation does: looks up
+// the referenced menu items + addon options, snapshots their names/prices,
+// and rolls up the money breakdown. Shared by admin order edits so a
+// re-priced order matches a freshly-placed one. `enforceAvailability` is off
+// for admin edits — staff can deliberately put a sold-out dish on an order.
+async function priceCartLines(
+  lines: AdminUpdateOrderInput["lines"],
+  fulfilment: FulfilmentMethod,
+  opts: { enforceAvailability: boolean },
+): Promise<{
+  lineValues: {
+    itemId: string;
+    itemName: string;
+    imageUrl: string;
+    quantity: number;
+    unitPrice: number;
+    addons: OrderLineAddon[];
+    notes: string | null;
+    sortOrder: number;
+  }[];
+  subtotal: number;
+  serviceCharge: number;
+  deliveryFee: number;
+  total: number;
+}> {
+  const itemIds = Array.from(new Set(lines.map((l) => l.itemId)));
+  const itemRows = await db
+    .select()
+    .from(menuItems)
+    .where(inArray(menuItems.id, itemIds));
+  const itemById = new Map(itemRows.map((r) => [r.id, r]));
+
+  for (const l of lines) {
+    const item = itemById.get(l.itemId);
+    if (!item) {
+      throw new OrderServiceError(
+        "ORDER_ITEM_NOT_FOUND",
+        `Dish ${l.itemId} no longer exists.`,
+      );
+    }
+    if (opts.enforceAvailability && !item.available) {
+      throw new OrderServiceError(
+        "ORDER_ITEM_UNAVAILABLE",
+        `${item.name} is sold out today.`,
+      );
+    }
+  }
+
+  const optionIds = Array.from(
+    new Set(lines.flatMap((l) => l.addons.map((a) => a.optionId))),
+  );
+  const optionRows =
+    optionIds.length > 0
+      ? await db
+          .select()
+          .from(menuAddonOptions)
+          .where(inArray(menuAddonOptions.id, optionIds))
+      : [];
+  const optionById = new Map(optionRows.map((r) => [r.id, r]));
+
+  const lineValues = lines.map((l, idx) => {
+    const item = itemById.get(l.itemId)!;
+    const addonSnapshots: OrderLineAddon[] = [];
+    for (const a of l.addons) {
+      const opt = optionById.get(a.optionId);
+      if (!opt || opt.groupId !== a.groupId) {
+        throw new OrderServiceError(
+          "ORDER_ADDON_NOT_FOUND",
+          `Option ${a.optionId} was removed or moved.`,
+        );
+      }
+      addonSnapshots.push({
+        groupId: a.groupId,
+        optionId: a.optionId,
+        name: opt.name,
+        priceDelta: opt.priceDelta,
+      });
+    }
+    return {
+      itemId: item.id,
+      itemName: item.name,
+      imageUrl: item.imageUrl,
+      quantity: l.quantity,
+      unitPrice: item.price,
+      addons: addonSnapshots,
+      notes: l.notes ?? null,
+      sortOrder: idx,
+    };
+  });
+
+  const subtotal = lineValues.reduce(
+    (s, x) =>
+      s +
+      (x.unitPrice + x.addons.reduce((t, a) => t + a.priceDelta, 0)) *
+        x.quantity,
+    0,
+  );
+  const serviceCharge = Math.round(subtotal * SERVICE_RATE);
+  const deliveryFee = subtotal > 0 ? DELIVERY_FEES[fulfilment] ?? 0 : 0;
+  const total = subtotal + serviceCharge + deliveryFee;
+
+  return { lineValues, subtotal, serviceCharge, deliveryFee, total };
+}
+
 export interface CreateOrderResult {
   order: Order;
 }
@@ -131,6 +238,11 @@ export interface CreateOrderResult {
 export async function createOrderFromCart(input: {
   payload: PlaceOrderInput;
   userId?: string;
+  // Whether to email the kitchen/admin inbox(es) about the new order.
+  // Defaults to true (customer checkout). Admin-placed orders pass false —
+  // the staff member placing it doesn't need to email themselves; they
+  // still get the in-app kitchen ticket below.
+  emailStaffOnCreate?: boolean;
 }): Promise<CreateOrderResult> {
   const parsed = placeOrderSchema.safeParse(input.payload);
   if (!parsed.success) {
@@ -316,25 +428,28 @@ export async function createOrderFromCart(input: {
 
   // Email the kitchen/admin inbox(es): the restaurant contact email plus any
   // extra addresses configured in Settings. Fire-and-forget — if Settings
-  // can't be read or Resend fails, the order still stands.
-  getSettings()
-    .then((settings) => {
-      const recipients = collectStaffOrderRecipients(settings);
-      if (recipients.length === 0) return;
-      return sendNewOrderStaffEmail({
-        to: recipients,
-        orderNumber: created.number,
-        totalFormatted: formatNaira(created.total),
-        fulfilmentLabel,
-        paymentLabel: PAYMENT_METHOD_LABEL[created.paymentMethod],
-        customerName: created.customer.name,
-        customerPhone: created.customer.phone,
-        itemCount,
-        lines: emailLines,
-        manageUrl: appUrl(`/admin/orders/${created.id}`),
-      });
-    })
-    .catch((err) => console.error("[orders] staff order email failed", err));
+  // can't be read or Resend fails, the order still stands. Skipped for
+  // admin-placed orders (see `emailStaffOnCreate`).
+  if (input.emailStaffOnCreate !== false) {
+    getSettings()
+      .then((settings) => {
+        const recipients = collectStaffOrderRecipients(settings);
+        if (recipients.length === 0) return;
+        return sendNewOrderStaffEmail({
+          to: recipients,
+          orderNumber: created.number,
+          totalFormatted: formatNaira(created.total),
+          fulfilmentLabel,
+          paymentLabel: PAYMENT_METHOD_LABEL[created.paymentMethod],
+          customerName: created.customer.name,
+          customerPhone: created.customer.phone,
+          itemCount,
+          lines: emailLines,
+          manageUrl: appUrl(`/admin/orders/${created.id}`),
+        });
+      })
+      .catch((err) => console.error("[orders] staff order email failed", err));
+  }
 
   return { order: created };
 }
@@ -525,4 +640,86 @@ export async function markOrderUnpaid(actor: ActorLike, id: string): Promise<Ord
     .where(eq(orders.id, id));
   const updated = await getOrderById(id);
   return updated!;
+}
+
+// Admin edit of an order's contents: line items, customer, fulfilment,
+// address, payment method and notes. Re-prices server-side via
+// `priceCartLines` and swaps the order_lines rows in one transaction, so the
+// stored totals always match the lines. Status and payment status are left
+// alone — those move through their own dedicated actions. A finished order
+// (delivered/cancelled) is frozen and can't be edited.
+export async function updateOrder(
+  actor: ActorLike,
+  id: string,
+  input: AdminUpdateOrderInput,
+): Promise<Order> {
+  requirePermission(actor, "orders:write");
+  const parsed = adminUpdateOrderSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new OrderServiceError("ORDER_INVALID_INPUT", parsed.error.message);
+  }
+  const data = parsed.data;
+
+  const [existing] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, id))
+    .limit(1);
+  if (!existing) throw new OrderServiceError("ORDER_NOT_FOUND");
+  if (existing.status === "delivered" || existing.status === "cancelled") {
+    throw new OrderServiceError(
+      "ORDER_NOT_EDITABLE",
+      `A ${existing.status} order can no longer be edited.`,
+    );
+  }
+
+  const priced = await priceCartLines(data.lines, data.fulfilment, {
+    enforceAvailability: false,
+  });
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(orders)
+      .set({
+        fulfilment: data.fulfilment,
+        customerName: data.customer.name,
+        customerPhone: data.customer.phone,
+        customerEmail: data.customer.email || null,
+        addressStreet: data.address?.street ?? null,
+        addressArea: data.address?.area ?? null,
+        addressCity: data.address?.city ?? null,
+        addressState: data.address?.state ?? null,
+        addressLandmark: data.address?.landmark ?? null,
+        addressInstructions: data.address?.instructions ?? null,
+        subtotal: priced.subtotal,
+        serviceCharge: priced.serviceCharge,
+        deliveryFee: priced.deliveryFee,
+        total: priced.total,
+        paymentMethod: data.paymentMethod,
+        notes: data.notes ?? null,
+      })
+      .where(eq(orders.id, id));
+
+    await tx.delete(orderLines).where(eq(orderLines.orderId, id));
+    await tx
+      .insert(orderLines)
+      .values(priced.lineValues.map((x) => ({ orderId: id, ...x })));
+  });
+
+  const updated = await getOrderById(id);
+  return updated!;
+}
+
+// Permanently removes an order and its lines (order_lines cascades on the
+// FK). This is a hard delete — for keeping the record, cancel the order
+// instead. Gated on orders:delete (super_admin / manager only).
+export async function deleteOrder(actor: ActorLike, id: string): Promise<void> {
+  requirePermission(actor, "orders:delete");
+  const [existing] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, id))
+    .limit(1);
+  if (!existing) throw new OrderServiceError("ORDER_NOT_FOUND");
+  await db.delete(orders).where(eq(orders.id, id));
 }

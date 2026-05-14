@@ -26,12 +26,14 @@ export {
 export {
   placeOrderSchema,
   updateStatusSchema,
+  adminUpdateOrderSchema,
   fulfilmentEnum,
   paymentMethodEnum,
   orderStatusEnum,
   paymentStatusEnum,
   type PlaceOrderInput,
   type UpdateStatusInput,
+  type AdminUpdateOrderInput,
 } from "./validation";
 
 export {
@@ -41,6 +43,8 @@ export {
   listOrders,
   listOrdersForUser,
   updateOrderStatus,
+  updateOrder,
+  deleteOrder,
   markOrderPaid,
   markOrderUnpaid,
 } from "./service";
