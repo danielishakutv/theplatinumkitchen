@@ -29,6 +29,8 @@ services:
       # Resend (optional in dev, required in prod for outgoing email)
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-Platinum Kitchen <noreply@theplatinumkitchen.com>}
+      # Cloudinary (optional — without it, admins paste image URLs by hand)
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
     ports:
       # Bound to localhost only — the host's web server (Apache here) is the
       # public entry point and reverse-proxies to this port. The container

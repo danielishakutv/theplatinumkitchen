@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { createItemAction, updateItemAction } from "../../actions";
 import type { AddonGroup, MenuCategory, MenuItem } from "@/modules/menu";
 import { formatNaira } from "@/lib/format";
@@ -225,20 +226,12 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
           title="Image &amp; tags"
           description="The hero image and any badges (chef's pick, spicy, vegan, etc.)."
         >
-          <Field
-            label="Image URL"
-            htmlFor="imageUrl"
-            hint="Paste a public image URL. Cloudinary uploads land in a later module."
-          >
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              defaultValue={item?.imageUrl ?? ""}
-              placeholder="https://…"
-              className="h-11"
-            />
-          </Field>
+          <ImageUploadField
+            name="imageUrl"
+            label="Dish image"
+            defaultValue={item?.imageUrl ?? ""}
+            hint="Upload a photo or paste a public image URL."
+          />
 
           <Field
             label="Tags"

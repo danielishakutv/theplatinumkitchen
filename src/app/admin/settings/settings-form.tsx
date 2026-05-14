@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { saveSettingsAction } from "./actions";
 import type { Settings } from "@/modules/settings";
 
@@ -271,16 +272,12 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             maxLength={500}
           />
         </Field>
-        <Field label="Hero image URL" htmlFor="heroImageUrl">
-          <Input
-            id="heroImageUrl"
-            name="heroImageUrl"
-            type="url"
-            defaultValue={settings.heroImageUrl}
-            placeholder="https://…"
-            className="h-11"
-          />
-        </Field>
+        <ImageUploadField
+          name="heroImageUrl"
+          label="Hero image"
+          defaultValue={settings.heroImageUrl}
+          hint="The full-width background behind the headline."
+        />
       </Section>
 
       <Section
@@ -308,16 +305,12 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             maxLength={2000}
           />
         </Field>
-        <Field label="Story image URL" htmlFor="storyImageUrl">
-          <Input
-            id="storyImageUrl"
-            name="storyImageUrl"
-            type="url"
-            defaultValue={settings.storyImageUrl}
-            placeholder="https://…"
-            className="h-11"
-          />
-        </Field>
+        <ImageUploadField
+          name="storyImageUrl"
+          label="Story image"
+          defaultValue={settings.storyImageUrl}
+          hint="The portrait image beside the story text."
+        />
       </Section>
 
       <Section

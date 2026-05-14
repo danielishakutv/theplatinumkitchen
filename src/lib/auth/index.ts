@@ -40,6 +40,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    // `authorized` + `session` come from authConfig (edge-safe). Only `jwt`
+    // — which seeds the token at sign-in — needs to live here.
     ...authConfig.callbacks,
     async jwt({ token, user }) {
       if (user) {
@@ -47,13 +49,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = (user as { role?: UserRole }).role ?? "customer";
       }
       return token;
-    },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = (token.role as UserRole) ?? "customer";
-      }
-      return session;
     },
   },
 });
