@@ -20,6 +20,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserMenu } from "@/components/admin/user-menu";
+import { NotificationBell } from "@/components/notification-bell";
 import { can, type Permission } from "@/modules/users/permissions";
 import type { UserRole } from "@/modules/users/types";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/admin", label: "Overview", Icon: LayoutDashboard, exact: true },
   { href: "/admin/orders", label: "Orders", Icon: ScrollText, badge: "live", requires: "orders:read" },
+  { href: "/admin/notifications", label: "Notifications", Icon: Bell },
   { href: "/admin/kitchen", label: "Kitchen", Icon: ChefHat, requires: "kitchen:advance" },
   { href: "/admin/menu", label: "Menu", Icon: UtensilsCrossed, requires: "menu:read" },
   { href: "/admin/invoices", label: "Invoices", Icon: Receipt, requires: "invoices:read" },
@@ -162,10 +164,7 @@ export function AdminShell({
               className="h-10 rounded-full border-platinum-200 bg-platinum-50 pl-9"
             />
           </div>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-primary" />
-          </Button>
+          <NotificationBell href="/admin/notifications" />
           <Button asChild variant="outline" size="sm" className="hidden h-9 rounded-full sm:inline-flex">
             <Link href="/menu">View site</Link>
           </Button>

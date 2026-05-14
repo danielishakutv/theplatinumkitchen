@@ -3,6 +3,7 @@ import { CircleUserRound } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { BrandMark } from "@/components/brand-mark";
 import { CartButton } from "@/components/cart-button";
+import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 
 export async function SiteHeader() {
@@ -16,6 +17,11 @@ export async function SiteHeader() {
       ? { href: "/admin", label: "Dashboard" }
       : { href: "/account", label: "Account" }
     : { href: "/sign-in?from=/account", label: "Sign in" };
+
+  // Staff browsing the storefront still get their console notifications.
+  const notificationsHref = isStaff
+    ? "/admin/notifications"
+    : "/account/notifications";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-platinum-200/70 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
@@ -31,7 +37,8 @@ export async function SiteHeader() {
           <NavLink href="/#contact">Contact</NavLink>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {session ? <NotificationBell href={notificationsHref} /> : null}
           <Button
             asChild
             variant="ghost"

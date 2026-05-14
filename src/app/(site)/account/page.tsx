@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { LogOut, Receipt, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import { Bell, LogOut, Receipt, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { listOrdersForUser, type Order, type OrderStatus } from "@/modules/orders";
 import { Button } from "@/components/ui/button";
@@ -54,16 +54,28 @@ export default async function AccountPage() {
           </h1>
           <p className="mt-1 text-muted-foreground">{session.user.email}</p>
         </div>
-        <form action={signOutAction}>
+        <div className="flex flex-wrap items-center gap-2">
           <Button
-            type="submit"
+            asChild
             variant="outline"
             size="sm"
             className="h-10 gap-1.5 rounded-full border-platinum-300"
           >
-            <LogOut className="h-3.5 w-3.5" /> Sign out
+            <Link href="/account/notifications">
+              <Bell className="h-3.5 w-3.5" /> Notifications
+            </Link>
           </Button>
-        </form>
+          <form action={signOutAction}>
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              className="h-10 gap-1.5 rounded-full border-platinum-300"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sign out
+            </Button>
+          </form>
+        </div>
       </header>
 
       <section className="mt-9">

@@ -4,7 +4,11 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { menuAddonOptions, menuItems } from "@/modules/menu/schema";
 import { requirePermission, type ActorLike } from "@/modules/users/permissions";
-import { sendOrderReceivedEmail } from "@/modules/notifications";
+import {
+  sendOrderReceivedEmail,
+  notifyStaff,
+  notifyUser,
+} from "@/modules/notifications";
 import { appUrl } from "@/lib/url";
 import { formatNaira } from "@/lib/format";
 import {
@@ -283,8 +287,49 @@ export async function createOrderFromCart(input: {
     }).catch((err) => console.error("[orders] order email failed", err));
   }
 
+  // In-app notification to the kitchen/admins. Fire-and-forget — a failure
+  // here must not roll back the order.
+  notifyStaff({
+    type: "order_placed",
+    title: `New order ${created.number}`,
+    body: `${formatNaira(created.total)} · ${created.lines.reduce(
+      (s, l) => s + l.quantity,
+      0,
+    )} items · ${created.fulfilment.replace(/_/g, " ")}`,
+    orderId: created.id,
+  }).catch((err) => console.error("[orders] staff notify failed", err));
+
   return { order: created };
 }
+
+// Customer-facing copy for each status an order can move into.
+const STATUS_NOTIFICATION: Record<OrderStatus, { title: string; body: string }> =
+  {
+    received: {
+      title: "Order received",
+      body: "We've got your order and will start on it shortly.",
+    },
+    preparing: {
+      title: "Your order is being prepared",
+      body: "The kitchen has started on your order.",
+    },
+    ready: {
+      title: "Your order is ready",
+      body: "Your order is packed and ready.",
+    },
+    out_for_delivery: {
+      title: "Your order is on the way",
+      body: "A rider is heading to you now.",
+    },
+    delivered: {
+      title: "Your order has been delivered",
+      body: "Enjoy your meal — thank you for ordering with us.",
+    },
+    cancelled: {
+      title: "Your order was cancelled",
+      body: "If this wasn't expected, please get in touch.",
+    },
+  };
 
 export async function getOrderById(id: string): Promise<Order | null> {
   const [row] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
@@ -387,6 +432,19 @@ export async function updateOrderStatus(
   }
 
   await db.update(orders).set({ status: next }).where(eq(orders.id, id));
+
+  // Let the customer know their order moved along. Guests (no userId) only
+  // get the email trail; signed-in customers also get an in-app notification.
+  if (existing.userId) {
+    const copy = STATUS_NOTIFICATION[next];
+    notifyUser(existing.userId, {
+      type: "order_status",
+      title: `${copy.title} — ${existing.number}`,
+      body: copy.body,
+      orderId: id,
+    }).catch((err) => console.error("[orders] status notify failed", err));
+  }
+
   const updated = await getOrderById(id);
   return updated!;
 }
@@ -406,6 +464,16 @@ export async function markOrderPaid(
       paystackReference: paystackReference ?? existing.paystackReference,
     })
     .where(eq(orders.id, id));
+
+  if (existing.userId && existing.paymentStatus !== "paid") {
+    notifyUser(existing.userId, {
+      type: "order_paid",
+      title: `Payment confirmed — ${existing.number}`,
+      body: "We've recorded your payment. Thank you!",
+      orderId: id,
+    }).catch((err) => console.error("[orders] paid notify failed", err));
+  }
+
   const updated = await getOrderById(id);
   return updated!;
 }

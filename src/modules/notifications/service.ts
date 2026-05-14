@@ -1,5 +1,8 @@
 import "server-only";
 
+import { and, count, desc, eq, isNull, ne } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { users } from "@/modules/users/schema";
 import { getFromAddress, getResendClient, isConfigured } from "./client";
 import {
   renderEmailChangeVerification,
@@ -7,6 +10,8 @@ import {
   renderPasswordReset,
   type OrderEmailLine,
 } from "./templates";
+import { notifications, type NotificationRow } from "./schema";
+import type { AppNotification, NotificationType } from "./types";
 
 interface SendResult {
   delivered: boolean;
@@ -92,4 +97,111 @@ export async function sendEmailChangeVerification(args: {
     ttlMinutes: args.ttlMinutes,
   });
   return send(args.to, subject, html, text);
+}
+
+// --- In-app notifications ----------------------------------------------------
+// Distinct from the email helpers above: these write rows to the notifications
+// table that the bell + /notifications pages poll. All creators are meant to
+// be called fire-and-forget — a notification failure must never roll back the
+// order action that triggered it.
+
+function rowToNotification(r: NotificationRow): AppNotification {
+  return {
+    id: r.id,
+    type: r.type,
+    title: r.title,
+    body: r.body,
+    orderId: r.orderId ?? undefined,
+    read: r.readAt !== null,
+    createdAt: r.createdAt.toISOString(),
+  };
+}
+
+interface NotifyInput {
+  type: NotificationType;
+  title: string;
+  body: string;
+  orderId?: string;
+}
+
+// Notify a single user (used for customer-facing order updates).
+export async function notifyUser(
+  userId: string,
+  input: NotifyInput,
+): Promise<void> {
+  if (!userId) return;
+  await db.insert(notifications).values({
+    userId,
+    type: input.type,
+    title: input.title,
+    body: input.body,
+    orderId: input.orderId ?? null,
+  });
+}
+
+// Fan a notification out to every active staff member.
+export async function notifyStaff(input: NotifyInput): Promise<void> {
+  const staff = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(ne(users.role, "customer"), eq(users.active, true)));
+  if (staff.length === 0) return;
+  await db.insert(notifications).values(
+    staff.map((s) => ({
+      userId: s.id,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      orderId: input.orderId ?? null,
+    })),
+  );
+}
+
+export async function listNotifications(
+  userId: string,
+  limit = 30,
+): Promise<AppNotification[]> {
+  const rows = await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+  return rows.map(rowToNotification);
+}
+
+export async function countUnreadNotifications(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(notifications)
+    .where(
+      and(eq(notifications.userId, userId), isNull(notifications.readAt)),
+    );
+  return row?.n ?? 0;
+}
+
+// Scoped by userId so a caller can only ever touch their own notifications.
+export async function markNotificationRead(
+  userId: string,
+  id: string,
+): Promise<void> {
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        eq(notifications.id, id),
+        eq(notifications.userId, userId),
+        isNull(notifications.readAt),
+      ),
+    );
+}
+
+export async function markAllNotificationsRead(userId: string): Promise<void> {
+  await db
+    .update(notifications)
+    .set({ readAt: new Date() })
+    .where(
+      and(eq(notifications.userId, userId), isNull(notifications.readAt)),
+    );
 }
