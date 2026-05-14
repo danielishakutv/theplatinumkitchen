@@ -40,12 +40,14 @@ export function InvoiceView({ order }: { order: Order }) {
                 <Printer className="h-3.5 w-3.5" /> Print
               </Button>
               <Button
+                asChild
                 variant="outline"
                 size="sm"
-                onClick={handlePrint}
                 className="h-9 gap-1.5 rounded-full border-platinum-300"
               >
-                <Download className="h-3.5 w-3.5" /> Save PDF
+                <a href={`/invoice/${order.id}/pdf`} download>
+                  <Download className="h-3.5 w-3.5" /> Download PDF
+                </a>
               </Button>
               <Button asChild size="sm" className="h-9 gap-1.5 rounded-full">
                 <a
@@ -207,7 +209,7 @@ export function InvoiceView({ order }: { order: Order }) {
         </article>
 
         <p className="mt-6 text-center text-xs text-muted-foreground print:hidden">
-          Tip: use your browser&apos;s &ldquo;Save as PDF&rdquo; option in the print dialog for a downloadable copy.
+          Download a PDF copy for your records, or print this page directly.
         </p>
       </div>
     </div>
