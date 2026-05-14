@@ -82,6 +82,9 @@ export function LiveTimeline({
     stages.findIndex((s) => s.status === status),
   );
   const isCancelled = status === "cancelled";
+  // While the order is still moving, the current stage gets a live pulse —
+  // something gentle to watch until the kitchen advances it.
+  const isActive = !isTerminal(status);
 
   return (
     <div className="mt-8 rounded-3xl border border-platinum-200 bg-card p-6 sm:p-8">
@@ -116,23 +119,32 @@ export function LiveTimeline({
                 {i < stages.length - 1 ? (
                   <span
                     className={cn(
-                      "absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-3 hidden h-0.5 sm:block",
-                      i < idx ? "bg-primary" : "bg-platinum-200",
+                      "absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-3 hidden h-0.5 overflow-hidden rounded-full sm:block",
+                      i < idx
+                        ? "bg-primary"
+                        : i === idx && isActive
+                          ? "timeline-flow"
+                          : "bg-platinum-200",
                     )}
                   />
                 ) : null}
-                <span
-                  className={cn(
-                    "relative z-10 grid h-7 w-7 place-items-center rounded-full transition-colors",
-                    reached
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-platinum-100 text-muted-foreground",
-                    isCurrent && "ring-4 ring-primary/15",
-                  )}
-                >
-                  {reached ? (
-                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                <span className="relative z-10 flex items-center justify-center">
+                  {isCurrent && isActive ? (
+                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/40 motion-reduce:hidden" />
                   ) : null}
+                  <span
+                    className={cn(
+                      "grid h-7 w-7 place-items-center rounded-full transition-colors",
+                      reached
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-platinum-100 text-muted-foreground",
+                      isCurrent && "ring-4 ring-primary/15",
+                    )}
+                  >
+                    {reached ? (
+                      <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                    ) : null}
+                  </span>
                 </span>
                 <span
                   className={cn(

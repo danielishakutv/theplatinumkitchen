@@ -211,3 +211,27 @@
   background-size: 200% 100%;
   animation: shimmer 2.5s linear infinite;
 }
+
+@keyframes timeline-flow {
+  0% { background-position: -100% 0; }
+  100% { background-position: 100% 0; }
+}
+
+/* The connector segment leaving the customer's current order stage — a soft
+   light sweeping toward the next step while they wait for it to advance. */
+@utility timeline-flow {
+  background-color: var(--color-primary);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklch, white 60%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: timeline-flow 1.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-flow { animation: none; }
+}
