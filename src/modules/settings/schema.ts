@@ -38,6 +38,13 @@ export const settings = pgTable("settings", {
   storyBody: text("story_body").notNull().default(""),
   storyImageUrl: text("story_image_url").notNull().default(""),
 
+  // Bank transfer payment details — shown to customers who pick the
+  // "Bank Transfer" option at checkout.
+  bankName: text("bank_name").notNull().default(""),
+  bankAccountName: text("bank_account_name").notNull().default(""),
+  bankAccountNumber: text("bank_account_number").notNull().default(""),
+  bankTransferNote: text("bank_transfer_note").notNull().default(""),
+
   // Social
   instagramUrl: text("instagram_url").notNull().default(""),
   facebookUrl: text("facebook_url").notNull().default(""),

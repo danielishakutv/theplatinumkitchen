@@ -176,6 +176,56 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </Section>
 
       <Section
+        title="Bank transfer"
+        description="Shown to customers who pick &quot;Bank Transfer&quot; at checkout. Leave the account number blank to hide the option entirely."
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Bank name" htmlFor="bankName">
+            <Input
+              id="bankName"
+              name="bankName"
+              defaultValue={settings.bankName}
+              placeholder="GTBank"
+              className="h-11"
+            />
+          </Field>
+          <Field label="Account name" htmlFor="bankAccountName">
+            <Input
+              id="bankAccountName"
+              name="bankAccountName"
+              defaultValue={settings.bankAccountName}
+              placeholder="Platinum Kitchen Ltd"
+              className="h-11"
+            />
+          </Field>
+          <Field label="Account number" htmlFor="bankAccountNumber">
+            <Input
+              id="bankAccountNumber"
+              name="bankAccountNumber"
+              defaultValue={settings.bankAccountNumber}
+              placeholder="0123456789"
+              className="h-11 tabular-nums"
+              inputMode="numeric"
+            />
+          </Field>
+        </div>
+        <Field
+          label="Transfer instructions"
+          htmlFor="bankTransferNote"
+          hint="A short line telling the customer what to do after transferring."
+        >
+          <Textarea
+            id="bankTransferNote"
+            name="bankTransferNote"
+            rows={2}
+            defaultValue={settings.bankTransferNote}
+            maxLength={500}
+            placeholder="Use your order number as the transfer reference, then send proof to our WhatsApp."
+          />
+        </Field>
+      </Section>
+
+      <Section
         title="Homepage hero"
         description="The big top section visitors see first."
       >

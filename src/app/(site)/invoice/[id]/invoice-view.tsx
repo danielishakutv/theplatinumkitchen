@@ -4,7 +4,9 @@ import Link from "next/link";
 import { ArrowLeft, Printer, MessageCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/brand-mark";
-import type { Order } from "@/modules/orders";
+// Value import (PAYMENT_METHOD_LABEL) comes from the leaf, not the barrel —
+// this is a client component and the barrel is server-only.
+import { PAYMENT_METHOD_LABEL, type Order } from "@/modules/orders/types";
 import { formatNaira, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -183,7 +185,7 @@ export function InvoiceView({ order }: { order: Order }) {
                   Payment
                 </p>
                 <p className="mt-1 font-medium">
-                  {order.paymentMethod === "cod" ? "Cash on Delivery" : "Paystack"}
+                  {PAYMENT_METHOD_LABEL[order.paymentMethod]}
                   <span
                     className={cn(
                       "ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",

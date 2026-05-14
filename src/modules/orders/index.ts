@@ -20,6 +20,7 @@ export {
   OrderServiceError,
   ORDER_ERROR_STATUS,
   NEXT_STATUSES,
+  PAYMENT_METHOD_LABEL,
 } from "./types";
 
 export {

@@ -23,6 +23,7 @@ import {
 import {
   NEXT_STATUSES,
   OrderServiceError,
+  PAYMENT_METHOD_LABEL,
   type Order,
   type OrderLine,
   type OrderLineAddon,
@@ -268,8 +269,7 @@ export async function createOrderFromCart(input: {
           : created.fulfilment === "pickup"
             ? "Pickup"
             : "Dine in",
-      paymentLabel:
-        created.paymentMethod === "cod" ? "Cash on Delivery" : "Paystack",
+      paymentLabel: PAYMENT_METHOD_LABEL[created.paymentMethod],
       trackingUrl: appUrl(`/order/${created.id}`),
       lines: created.lines.map((line) => ({
         name: line.itemName,

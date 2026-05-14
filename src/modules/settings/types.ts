@@ -18,6 +18,10 @@ export interface Settings {
   storyHeading: string;
   storyBody: string;
   storyImageUrl: string;
+  bankName: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankTransferNote: string;
   instagramUrl: string;
   facebookUrl: string;
   twitterUrl: string;

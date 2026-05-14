@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getSettings } from "@/modules/settings";
 import { CheckoutClient } from "./checkout-client";
 
 export const metadata: Metadata = {
@@ -6,6 +7,16 @@ export const metadata: Metadata = {
   description: "Confirm your order with Platinum Kitchen.",
 };
 
-export default function CheckoutPage() {
-  return <CheckoutClient />;
+export default async function CheckoutPage() {
+  const settings = await getSettings();
+  return (
+    <CheckoutClient
+      bank={{
+        name: settings.bankName,
+        accountName: settings.bankAccountName,
+        accountNumber: settings.bankAccountNumber,
+        note: settings.bankTransferNote,
+      }}
+    />
+  );
 }

@@ -33,6 +33,11 @@ export const updateSettingsSchema = z.object({
   storyBody: text(2000).optional(),
   storyImageUrl: optionalUrl.optional(),
 
+  bankName: text(120).optional(),
+  bankAccountName: text(120).optional(),
+  bankAccountNumber: text(40).optional(),
+  bankTransferNote: text(500).optional(),
+
   instagramUrl: optionalUrl.optional(),
   facebookUrl: optionalUrl.optional(),
   twitterUrl: optionalUrl.optional(),

@@ -26,7 +26,11 @@ export const fulfilmentMethodEnum = pgEnum("fulfilment_method", [
   "dine_in",
 ]);
 
-export const paymentMethodEnum = pgEnum("payment_method", ["cod", "paystack"]);
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "cod",
+  "bank_transfer",
+  "paystack",
+]);
 export const paymentStatusEnum = pgEnum("payment_status", [
   "unpaid",
   "paid",

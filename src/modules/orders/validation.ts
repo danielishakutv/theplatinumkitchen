@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const fulfilmentEnum = z.enum(["delivery", "pickup", "dine_in"]);
-export const paymentMethodEnum = z.enum(["cod", "paystack"]);
+export const paymentMethodEnum = z.enum(["cod", "bank_transfer", "paystack"]);
 export const orderStatusEnum = z.enum([
   "received",
   "preparing",

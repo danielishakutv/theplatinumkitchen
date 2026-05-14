@@ -8,8 +8,14 @@ export type OrderStatus =
 
 export type FulfilmentMethod = "delivery" | "pickup" | "dine_in";
 
-export type PaymentMethod = "cod" | "paystack";
+export type PaymentMethod = "cod" | "bank_transfer" | "paystack";
 export type PaymentStatus = "unpaid" | "paid" | "refunded";
+
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  cod: "Cash on Delivery",
+  bank_transfer: "Bank Transfer",
+  paystack: "Pay Online",
+};
 
 export interface OrderLineAddon {
   groupId: string;

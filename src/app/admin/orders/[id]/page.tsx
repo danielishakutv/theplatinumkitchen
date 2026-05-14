@@ -13,7 +13,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { auth } from "@/lib/auth";
-import { getOrderById, type Order } from "@/modules/orders";
+import {
+  getOrderById,
+  PAYMENT_METHOD_LABEL,
+  type Order,
+} from "@/modules/orders";
 import { formatDateTime, formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { StatusActions } from "./status-actions";
@@ -223,7 +227,7 @@ function Summary({ order }: { order: Order }) {
 
         <Card title="Payment">
           <p className="font-medium">
-            {order.paymentMethod === "cod" ? "Cash on Delivery" : "Paystack"}
+            {PAYMENT_METHOD_LABEL[order.paymentMethod]}
           </p>
           {order.paystackReference ? (
             <p className="mt-1 truncate text-xs text-muted-foreground">

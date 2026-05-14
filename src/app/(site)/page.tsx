@@ -152,7 +152,7 @@ function HowItWorks() {
       Icon: Receipt,
       title: "Pay your way",
       body:
-        "Cash on Delivery is our default — or pay securely online with Paystack. You're in control.",
+        "Cash on Delivery or a quick bank transfer — settle however suits you. Card and USSD payments are on the way.",
     },
     {
       Icon: Bike,
@@ -311,7 +311,7 @@ function CTAStrip() {
               Build your order in under two minutes.
             </h2>
             <p className="text-emerald-100/85">
-              Cash on Delivery available, or pay securely with Paystack.
+              Cash on Delivery or bank transfer — whichever is easiest for you.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">

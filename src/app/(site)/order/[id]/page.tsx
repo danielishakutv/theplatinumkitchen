@@ -10,10 +10,16 @@ import {
   Bike,
   Store,
   Utensils,
+  Landmark,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { getOrderById, type Order, type OrderStatus } from "@/modules/orders";
+import {
+  getOrderById,
+  PAYMENT_METHOD_LABEL,
+  type Order,
+  type OrderStatus,
+} from "@/modules/orders";
 import { getSettings, type Settings } from "@/modules/settings";
 import { formatNaira, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -33,6 +39,10 @@ export default async function OrderConfirmationPage({
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <Hero order={order} />
       <Timeline status={order.status} fulfilment={order.fulfilment} />
+      {order.paymentMethod === "bank_transfer" &&
+      order.paymentStatus === "unpaid" ? (
+        <BankTransferCallout order={order} settings={settings} />
+      ) : null}
       <Summary order={order} />
       <Actions order={order} settings={settings} />
     </div>
@@ -150,6 +160,68 @@ function Timeline({
           This order was cancelled. If you weren&apos;t expecting that, give us a call.
         </p>
       )}
+    </div>
+  );
+}
+
+function BankTransferCallout({
+  order,
+  settings,
+}: {
+  order: Order;
+  settings: Settings;
+}) {
+  if (!settings.bankAccountNumber) return null;
+  return (
+    <div className="mt-8 rounded-3xl border-2 border-primary/30 bg-accent/30 p-6 sm:p-8">
+      <div className="flex items-start gap-3">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+          <Landmark className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-xl">Complete your bank transfer</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your order is reserved. Transfer{" "}
+            <span className="font-semibold text-foreground">
+              {formatNaira(order.total)}
+            </span>{" "}
+            to the account below, using{" "}
+            <span className="font-semibold text-foreground">{order.number}</span>{" "}
+            as the reference.
+          </p>
+
+          <dl className="mt-4 grid gap-2 rounded-2xl bg-card p-4 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">
+                Bank
+              </dt>
+              <dd className="mt-0.5 font-medium">{settings.bankName || "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">
+                Account name
+              </dt>
+              <dd className="mt-0.5 font-medium">
+                {settings.bankAccountName || "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wider text-muted-foreground">
+                Account number
+              </dt>
+              <dd className="mt-0.5 font-display text-base font-semibold tabular-nums">
+                {settings.bankAccountNumber}
+              </dd>
+            </div>
+          </dl>
+
+          {settings.bankTransferNote ? (
+            <p className="mt-3 text-xs leading-relaxed text-foreground/80">
+              {settings.bankTransferNote}
+            </p>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -272,7 +344,7 @@ function Summary({ order }: { order: Order }) {
         <Card title="Payment">
           <div className="flex items-center justify-between">
             <span className="font-medium">
-              {order.paymentMethod === "cod" ? "Cash on Delivery" : "Paystack"}
+              {PAYMENT_METHOD_LABEL[order.paymentMethod]}
             </span>
             <span
               className={cn(

@@ -98,7 +98,11 @@ export default async function InvoicesPage() {
                       {formatDate(order.createdAt)}
                     </td>
                     <td className="px-5 py-4 text-xs uppercase tracking-wider text-muted-foreground">
-                      {order.paymentMethod === "cod" ? "Cash" : "Paystack"}
+                      {order.paymentMethod === "cod"
+                        ? "Cash"
+                        : order.paymentMethod === "bank_transfer"
+                          ? "Transfer"
+                          : "Online"}
                     </td>
                     <td className="px-5 py-4 text-right font-semibold tabular-nums">
                       {formatNaira(order.total)}

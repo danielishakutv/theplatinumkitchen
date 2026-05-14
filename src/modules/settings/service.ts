@@ -29,6 +29,11 @@ const DEFAULTS: Omit<Settings, "updatedAt"> = {
   storyBody:
     "Platinum Kitchen began as a Sunday tradition in a small Abuja flat — a single pot of jollof, a few aunties, and the kind of arguments only the right pepper can settle.\n\nToday we serve across the city, but the rules haven't changed: the stock is made from scratch, the chicken is grilled over real charcoal, and nothing leaves the kitchen if it doesn't taste like home.",
   storyImageUrl: "",
+  bankName: "",
+  bankAccountName: "",
+  bankAccountNumber: "",
+  bankTransferNote:
+    "Use your order number as the transfer reference, then send proof to our WhatsApp.",
   instagramUrl: "",
   facebookUrl: "",
   twitterUrl: "",
@@ -55,6 +60,10 @@ function rowToSettings(row: SettingsRow): Settings {
     storyHeading: row.storyHeading,
     storyBody: row.storyBody,
     storyImageUrl: row.storyImageUrl,
+    bankName: row.bankName,
+    bankAccountName: row.bankAccountName,
+    bankAccountNumber: row.bankAccountNumber,
+    bankTransferNote: row.bankTransferNote,
     instagramUrl: row.instagramUrl,
     facebookUrl: row.facebookUrl,
     twitterUrl: row.twitterUrl,

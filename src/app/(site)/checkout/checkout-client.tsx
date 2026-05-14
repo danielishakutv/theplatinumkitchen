@@ -4,7 +4,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CreditCard, Banknote, Bike, Store, Utensils, ShieldCheck, Loader2, ArrowLeft } from "lucide-react";
+import {
+  CreditCard,
+  Banknote,
+  Landmark,
+  Bike,
+  Store,
+  Utensils,
+  ShieldCheck,
+  Loader2,
+  ArrowLeft,
+  Copy,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +36,14 @@ const FULFILMENTS: { value: FulfilmentMethod; label: string; helper: string; Ico
   { value: "dine_in", label: "Dine in", helper: "At our table", Icon: Utensils },
 ];
 
-export function CheckoutClient() {
+export interface BankDetails {
+  name: string;
+  accountName: string;
+  accountNumber: string;
+  note: string;
+}
+
+export function CheckoutClient({ bank }: { bank: BankDetails }) {
   const router = useRouter();
   const lines = useCart((s) => s.lines);
   const fulfilment = useCart((s) => s.fulfilment);
@@ -37,6 +56,7 @@ export function CheckoutClient() {
   const [submitting, setSubmitting] = useState(false);
 
   const isEmpty = lines.length === 0;
+  const bankAvailable = bank.accountNumber.trim().length > 0;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -229,28 +249,49 @@ export function CheckoutClient() {
           ) : null}
 
           <Section title="Payment">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               <PaymentOption
-                value="cod"
                 active={payment === "cod"}
-                onSelect={setPayment}
+                onSelect={() => setPayment("cod")}
                 Icon={Banknote}
                 title="Cash on Delivery"
                 helper="Pay our rider in cash on arrival"
                 badge="Default"
               />
+              {bankAvailable ? (
+                <PaymentOption
+                  active={payment === "bank_transfer"}
+                  onSelect={() => setPayment("bank_transfer")}
+                  Icon={Landmark}
+                  title="Bank Transfer"
+                  helper="Transfer to our account, then send proof"
+                />
+              ) : null}
               <PaymentOption
-                value="paystack"
-                active={payment === "paystack"}
-                onSelect={setPayment}
+                active={false}
+                disabled
+                onSelect={() =>
+                  toast("Online payment is coming soon", {
+                    description:
+                      "Card, USSD and transfer-via-Paystack land in a future update. Use Cash on Delivery or Bank Transfer for now.",
+                  })
+                }
                 Icon={CreditCard}
-                title="Pay with Paystack"
-                helper="Card · bank transfer · USSD"
+                title="Pay Online — Card, USSD…"
+                helper="Coming soon"
+                badge="Coming soon"
               />
             </div>
+
+            {payment === "bank_transfer" && bankAvailable ? (
+              <BankDetailsPanel bank={bank} />
+            ) : null}
+
             <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />
-              Secure checkout — we never store your card details.
+              {payment === "bank_transfer"
+                ? "We'll confirm your order once the transfer lands."
+                : "No payment is taken now — settle with the rider on arrival."}
             </p>
           </Section>
         </div>
@@ -380,37 +421,41 @@ function Field({
 }
 
 function PaymentOption({
-  value,
   active,
   onSelect,
   Icon,
   title,
   helper,
   badge,
+  disabled = false,
 }: {
-  value: PaymentMethod;
   active: boolean;
-  onSelect: (v: PaymentMethod) => void;
+  onSelect: () => void;
   Icon: typeof CreditCard;
   title: string;
   helper: string;
   badge?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onSelect(value)}
+      onClick={onSelect}
+      aria-disabled={disabled}
       className={cn(
         "relative flex items-start gap-3 rounded-2xl border bg-card p-5 text-left transition-all",
         active
           ? "border-primary bg-accent/40 ring-2 ring-primary/15"
           : "border-platinum-200 hover:border-platinum-300",
+        disabled && "opacity-55",
       )}
     >
       <div
         className={cn(
           "grid h-10 w-10 shrink-0 place-items-center rounded-xl",
-          active ? "bg-primary text-primary-foreground" : "bg-platinum-100 text-foreground/70",
+          active
+            ? "bg-primary text-primary-foreground"
+            : "bg-platinum-100 text-foreground/70",
         )}
       >
         <Icon className="h-5 w-5" />
@@ -419,7 +464,14 @@ function PaymentOption({
         <div className="flex items-center gap-2">
           <span className="font-medium">{title}</span>
           {badge ? (
-            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+                disabled
+                  ? "bg-platinum-200 text-muted-foreground"
+                  : "bg-accent text-primary",
+              )}
+            >
               {badge}
             </span>
           ) : null}
@@ -427,6 +479,63 @@ function PaymentOption({
         <p className="mt-0.5 text-sm text-muted-foreground">{helper}</p>
       </div>
     </button>
+  );
+}
+
+function BankDetailsPanel({ bank }: { bank: BankDetails }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyAccount = async () => {
+    try {
+      await navigator.clipboard.writeText(bank.accountNumber.replace(/\s/g, ""));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy — long-press the number instead.");
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-2xl border border-primary/30 bg-accent/30 p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+        Transfer to
+      </p>
+      <dl className="mt-3 space-y-2 text-sm">
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted-foreground">Bank</dt>
+          <dd className="font-medium">{bank.name || "—"}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted-foreground">Account name</dt>
+          <dd className="font-medium text-right">{bank.accountName || "—"}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="text-muted-foreground">Account number</dt>
+          <dd className="flex items-center gap-2">
+            <span className="font-display text-base font-semibold tabular-nums">
+              {bank.accountNumber}
+            </span>
+            <button
+              type="button"
+              onClick={copyAccount}
+              className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+              aria-label="Copy account number"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </dd>
+        </div>
+      </dl>
+      {bank.note ? (
+        <p className="mt-3 border-t border-primary/15 pt-3 text-xs leading-relaxed text-foreground/80">
+          {bank.note}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
