@@ -6,6 +6,7 @@ import {
   Bike,
   ExternalLink,
   MapPin,
+  Pencil,
   Phone,
   Store,
   Utensils,
@@ -93,11 +94,27 @@ export default async function AdminOrderDetailPage({
       </div>
 
       <section className="rounded-3xl border border-platinum-200 bg-card p-5 sm:p-7">
-        <header className="mb-4">
-          <h2 className="font-display text-lg font-medium">Actions</h2>
-          <p className="text-sm text-muted-foreground">
-            Move the order through its stages or update payment.
-          </p>
+        <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-medium">Actions</h2>
+            <p className="text-sm text-muted-foreground">
+              Move the order through its stages or update payment.
+            </p>
+          </div>
+          {can(session.user, "orders:write") &&
+          order.status !== "delivered" &&
+          order.status !== "cancelled" ? (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-9 gap-1.5 rounded-full"
+            >
+              <Link href={`/admin/orders/${order.id}/edit`}>
+                <Pencil className="h-3.5 w-3.5" /> Edit order
+              </Link>
+            </Button>
+          ) : null}
         </header>
         <StatusActions order={order} />
       </section>
