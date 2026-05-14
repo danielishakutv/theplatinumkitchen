@@ -9,6 +9,8 @@ export {
   sendEmailChangeVerification,
   sendOrderReceivedEmail,
   sendNewOrderStaffEmail,
+  sendOrderUpdatedEmail,
+  sendOrderUpdatedStaffEmail,
 } from "./service";
 export { isConfigured as isEmailConfigured } from "./client";
 

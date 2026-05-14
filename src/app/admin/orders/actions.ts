@@ -93,9 +93,10 @@ export async function markUnpaidAction(id: string): Promise<ActionResult> {
 }
 
 // Places an order from the admin panel (phone-in / walk-in). Reuses the same
-// pricing + invoice-numbering path as customer checkout, but skips the
-// "new order" staff email — whoever placed it doesn't need to email
-// themselves. Returns the new order id so the caller can open it.
+// pricing + invoice-numbering path as customer checkout, so it fires the same
+// notifications: the customer's confirmation email (if an email was entered),
+// the in-app kitchen ticket, and the "new order" email to the staff/admin
+// inboxes. Returns the new order id so the caller can open it.
 export async function createOrderAction(
   input: PlaceOrderInput,
 ): Promise<ActionResult & { orderId?: string }> {
@@ -103,10 +104,7 @@ export async function createOrderAction(
   if (!user) return { ok: false, error: "Sign in first." };
   try {
     requirePermission(user, "orders:write");
-    const { order } = await createOrderFromCart({
-      payload: input,
-      emailStaffOnCreate: false,
-    });
+    const { order } = await createOrderFromCart({ payload: input });
     revalidatePath("/admin");
     revalidatePath("/admin/orders");
     revalidatePath("/admin/kitchen");

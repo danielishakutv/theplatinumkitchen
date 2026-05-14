@@ -7,6 +7,8 @@ import { requirePermission, type ActorLike } from "@/modules/users/permissions";
 import {
   sendOrderReceivedEmail,
   sendNewOrderStaffEmail,
+  sendOrderUpdatedEmail,
+  sendOrderUpdatedStaffEmail,
   notifyStaff,
   notifyUser,
 } from "@/modules/notifications";
@@ -238,11 +240,6 @@ export interface CreateOrderResult {
 export async function createOrderFromCart(input: {
   payload: PlaceOrderInput;
   userId?: string;
-  // Whether to email the kitchen/admin inbox(es) about the new order.
-  // Defaults to true (customer checkout). Admin-placed orders pass false —
-  // the staff member placing it doesn't need to email themselves; they
-  // still get the in-app kitchen ticket below.
-  emailStaffOnCreate?: boolean;
 }): Promise<CreateOrderResult> {
   const parsed = placeOrderSchema.safeParse(input.payload);
   if (!parsed.success) {
@@ -428,28 +425,25 @@ export async function createOrderFromCart(input: {
 
   // Email the kitchen/admin inbox(es): the restaurant contact email plus any
   // extra addresses configured in Settings. Fire-and-forget — if Settings
-  // can't be read or Resend fails, the order still stands. Skipped for
-  // admin-placed orders (see `emailStaffOnCreate`).
-  if (input.emailStaffOnCreate !== false) {
-    getSettings()
-      .then((settings) => {
-        const recipients = collectStaffOrderRecipients(settings);
-        if (recipients.length === 0) return;
-        return sendNewOrderStaffEmail({
-          to: recipients,
-          orderNumber: created.number,
-          totalFormatted: formatNaira(created.total),
-          fulfilmentLabel,
-          paymentLabel: PAYMENT_METHOD_LABEL[created.paymentMethod],
-          customerName: created.customer.name,
-          customerPhone: created.customer.phone,
-          itemCount,
-          lines: emailLines,
-          manageUrl: appUrl(`/admin/orders/${created.id}`),
-        });
-      })
-      .catch((err) => console.error("[orders] staff order email failed", err));
-  }
+  // can't be read or Resend fails, the order still stands.
+  getSettings()
+    .then((settings) => {
+      const recipients = collectStaffOrderRecipients(settings);
+      if (recipients.length === 0) return;
+      return sendNewOrderStaffEmail({
+        to: recipients,
+        orderNumber: created.number,
+        totalFormatted: formatNaira(created.total),
+        fulfilmentLabel,
+        paymentLabel: PAYMENT_METHOD_LABEL[created.paymentMethod],
+        customerName: created.customer.name,
+        customerPhone: created.customer.phone,
+        itemCount,
+        lines: emailLines,
+        manageUrl: appUrl(`/admin/orders/${created.id}`),
+      });
+    })
+    .catch((err) => console.error("[orders] staff order email failed", err));
 
   return { order: created };
 }
@@ -707,7 +701,88 @@ export async function updateOrder(
   });
 
   const updated = await getOrderById(id);
-  return updated!;
+  if (!updated) throw new OrderServiceError("ORDER_NOT_FOUND");
+
+  // Tell everyone the order changed. All fire-and-forget — a notification
+  // failure must never undo the edit that just succeeded.
+  const fulfilmentLabel =
+    updated.fulfilment === "delivery"
+      ? "Delivery"
+      : updated.fulfilment === "pickup"
+        ? "Pickup"
+        : "Dine in";
+  const itemCount = updated.lines.reduce((s, l) => s + l.quantity, 0);
+  const emailLines = updated.lines.map((line) => ({
+    name: line.itemName,
+    quantity: line.quantity,
+    addons: line.addons.map((a) => a.name),
+    unitTotalFormatted: formatNaira(
+      (line.unitPrice + line.addons.reduce((s, a) => s + a.priceDelta, 0)) *
+        line.quantity,
+    ),
+  }));
+
+  // Customer confirmation email — only if we have an address for them.
+  if (updated.customer.email) {
+    sendOrderUpdatedEmail({
+      to: updated.customer.email,
+      customerFirstName:
+        updated.customer.name.split(" ")[0] || updated.customer.name,
+      orderNumber: updated.number,
+      totalFormatted: formatNaira(updated.total),
+      fulfilmentLabel,
+      paymentLabel: PAYMENT_METHOD_LABEL[updated.paymentMethod],
+      trackingUrl: appUrl(`/order/${updated.id}`),
+      lines: emailLines,
+    }).catch((err) =>
+      console.error("[orders] order updated email failed", err),
+    );
+  }
+
+  // In-app: notify the signed-in customer (if any) and the kitchen/admins.
+  if (existing.userId) {
+    notifyUser(existing.userId, {
+      type: "order_status",
+      title: `Order updated — ${updated.number}`,
+      body: "We've made a change to your order. Tap to see the latest.",
+      orderId: id,
+    }).catch((err) =>
+      console.error("[orders] customer update notify failed", err),
+    );
+  }
+  notifyStaff({
+    type: "order_placed",
+    title: `Order updated ${updated.number}`,
+    body: `${formatNaira(updated.total)} · ${itemCount} items · ${updated.fulfilment.replace(/_/g, " ")}`,
+    orderId: id,
+  }).catch((err) =>
+    console.error("[orders] staff update notify failed", err),
+  );
+
+  // Email the kitchen/admin inbox(es): the restaurant contact email plus any
+  // extra addresses configured in Settings — same recipient set as a new order.
+  getSettings()
+    .then((settings) => {
+      const recipients = collectStaffOrderRecipients(settings);
+      if (recipients.length === 0) return;
+      return sendOrderUpdatedStaffEmail({
+        to: recipients,
+        orderNumber: updated.number,
+        totalFormatted: formatNaira(updated.total),
+        fulfilmentLabel,
+        paymentLabel: PAYMENT_METHOD_LABEL[updated.paymentMethod],
+        customerName: updated.customer.name,
+        customerPhone: updated.customer.phone,
+        itemCount,
+        lines: emailLines,
+        manageUrl: appUrl(`/admin/orders/${updated.id}`),
+      });
+    })
+    .catch((err) =>
+      console.error("[orders] staff order updated email failed", err),
+    );
+
+  return updated;
 }
 
 // Permanently removes an order and its lines (order_lines cascades on the

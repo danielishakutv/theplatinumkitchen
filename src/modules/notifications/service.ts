@@ -8,6 +8,8 @@ import {
   renderEmailChangeVerification,
   renderNewOrderForStaff,
   renderOrderReceived,
+  renderOrderUpdatedForCustomer,
+  renderOrderUpdatedForStaff,
   renderPasswordReset,
   type OrderEmailLine,
 } from "./templates";
@@ -104,6 +106,58 @@ export async function sendNewOrderStaffEmail(args: {
 }): Promise<SendResult> {
   if (args.to.length === 0) return { delivered: false };
   const { subject, html, text } = renderNewOrderForStaff({
+    orderNumber: args.orderNumber,
+    totalFormatted: args.totalFormatted,
+    fulfilmentLabel: args.fulfilmentLabel,
+    paymentLabel: args.paymentLabel,
+    customerName: args.customerName,
+    customerPhone: args.customerPhone,
+    itemCount: args.itemCount,
+    lines: args.lines,
+    manageUrl: args.manageUrl,
+  });
+  return send(args.to, subject, html, text);
+}
+
+// Sent to the customer when an admin edits their order's contents.
+export async function sendOrderUpdatedEmail(args: {
+  to: string;
+  customerFirstName: string;
+  orderNumber: string;
+  totalFormatted: string;
+  fulfilmentLabel: string;
+  paymentLabel: string;
+  trackingUrl: string;
+  lines: OrderEmailLine[];
+}): Promise<SendResult> {
+  const { subject, html, text } = renderOrderUpdatedForCustomer({
+    customerFirstName: args.customerFirstName,
+    orderNumber: args.orderNumber,
+    totalFormatted: args.totalFormatted,
+    fulfilmentLabel: args.fulfilmentLabel,
+    paymentLabel: args.paymentLabel,
+    trackingUrl: args.trackingUrl,
+    lines: args.lines,
+  });
+  return send(args.to, subject, html, text);
+}
+
+// Sent to the kitchen/admin inbox(es) when an admin edits an order. `to` is
+// the already-deduped recipient list — callers pass an empty array to skip.
+export async function sendOrderUpdatedStaffEmail(args: {
+  to: string[];
+  orderNumber: string;
+  totalFormatted: string;
+  fulfilmentLabel: string;
+  paymentLabel: string;
+  customerName: string;
+  customerPhone: string;
+  itemCount: number;
+  lines: OrderEmailLine[];
+  manageUrl: string;
+}): Promise<SendResult> {
+  if (args.to.length === 0) return { delivered: false };
+  const { subject, html, text } = renderOrderUpdatedForStaff({
     orderNumber: args.orderNumber,
     totalFormatted: args.totalFormatted,
     fulfilmentLabel: args.fulfilmentLabel,
