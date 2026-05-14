@@ -18,11 +18,11 @@ import {
   getOrderById,
   PAYMENT_METHOD_LABEL,
   type Order,
-  type OrderStatus,
 } from "@/modules/orders";
 import { getSettings, type Settings } from "@/modules/settings";
 import { formatNaira, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { LiveTimeline } from "./live-timeline";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,11 @@ export default async function OrderConfirmationPage({
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <Hero order={order} />
-      <Timeline status={order.status} fulfilment={order.fulfilment} />
+      <LiveTimeline
+        orderId={order.id}
+        initialStatus={order.status}
+        fulfilment={order.fulfilment}
+      />
       {order.paymentMethod === "bank_transfer" &&
       order.paymentStatus === "unpaid" ? (
         <BankTransferCallout order={order} settings={settings} />
@@ -68,98 +72,6 @@ function Hero({ order }: { order: Order }) {
         <span className="font-display text-lg font-semibold tabular-nums">{order.number}</span>
         <span className="text-xs text-muted-foreground">· {formatDateTime(order.createdAt)}</span>
       </div>
-    </div>
-  );
-}
-
-const STAGES: { status: OrderStatus; label: string }[] = [
-  { status: "received", label: "Received" },
-  { status: "preparing", label: "Preparing" },
-  { status: "ready", label: "Ready" },
-  { status: "out_for_delivery", label: "On the way" },
-  { status: "delivered", label: "Delivered" },
-];
-
-function Timeline({
-  status,
-  fulfilment,
-}: {
-  status: OrderStatus;
-  fulfilment: Order["fulfilment"];
-}) {
-  const stages =
-    fulfilment === "delivery"
-      ? STAGES
-      : STAGES.filter((s) => s.status !== "out_for_delivery");
-  const idx = Math.max(
-    0,
-    stages.findIndex((s) => s.status === status),
-  );
-  const isCancelled = status === "cancelled";
-
-  return (
-    <div className="mt-8 rounded-3xl border border-platinum-200 bg-card p-6 sm:p-8">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            Order status
-          </span>
-          <p className="mt-1 font-display text-xl">
-            {isCancelled ? "Cancelled" : stages[idx]?.label ?? "Pending"}
-          </p>
-        </div>
-        <span className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-primary">
-          {fulfilment === "delivery"
-            ? "Delivery"
-            : fulfilment === "pickup"
-              ? "Pickup"
-              : "Dine in"}
-        </span>
-      </div>
-
-      {!isCancelled ? (
-        <ol className="mt-7 grid grid-cols-2 gap-y-6 sm:flex sm:items-start sm:justify-between sm:gap-2">
-          {stages.map((s, i) => {
-            const reached = i <= idx;
-            const isCurrent = i === idx;
-            return (
-              <li key={s.status} className="relative flex flex-1 flex-col items-center text-center">
-                {i < stages.length - 1 ? (
-                  <span
-                    className={cn(
-                      "absolute left-[calc(50%+1.5rem)] right-[calc(-50%+1.5rem)] top-3 hidden h-0.5 sm:block",
-                      i < idx ? "bg-primary" : "bg-platinum-200",
-                    )}
-                  />
-                ) : null}
-                <span
-                  className={cn(
-                    "relative z-10 grid h-7 w-7 place-items-center rounded-full",
-                    reached
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-platinum-100 text-muted-foreground",
-                    isCurrent && "ring-4 ring-primary/15",
-                  )}
-                >
-                  {reached ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
-                </span>
-                <span
-                  className={cn(
-                    "mt-2.5 text-xs font-medium uppercase tracking-wider",
-                    reached ? "text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {s.label}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          This order was cancelled. If you weren&apos;t expecting that, give us a call.
-        </p>
-      )}
     </div>
   );
 }
