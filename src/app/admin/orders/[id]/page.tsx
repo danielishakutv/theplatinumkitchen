@@ -18,9 +18,11 @@ import {
   PAYMENT_METHOD_LABEL,
   type Order,
 } from "@/modules/orders";
+import { can } from "@/modules/users";
 import { formatDateTime, formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { StatusActions } from "./status-actions";
+import { DeleteOrderButton } from "./delete-order-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Order detail" };
@@ -101,6 +103,21 @@ export default async function AdminOrderDetailPage({
       </section>
 
       <Summary order={order} />
+
+      {can(session.user, "orders:delete") ? (
+        <section className="rounded-3xl border border-destructive/30 bg-destructive/5 p-5 sm:p-7">
+          <header className="mb-4">
+            <h2 className="font-display text-lg font-medium text-destructive">
+              Danger zone
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Deleting removes this order and its history for good. To keep the
+              record, cancel the order instead.
+            </p>
+          </header>
+          <DeleteOrderButton orderId={order.id} orderNumber={order.number} />
+        </section>
+      ) : null}
     </div>
   );
 }

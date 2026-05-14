@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import {
   OrderServiceError,
+  deleteOrder,
   markOrderPaid,
   markOrderUnpaid,
   updateOrderStatus,
@@ -27,6 +28,9 @@ function toError(err: unknown): ActionResult {
       ORDER_INVALID_INPUT: "Some details don't look right. Check and try again.",
       ORDER_NOT_FOUND: "That order doesn't exist.",
       ORDER_STATUS_INVALID: err.message || "Status transition not allowed.",
+      ORDER_NOT_EDITABLE: err.message || "This order can no longer be edited.",
+      ORDER_ITEM_NOT_FOUND: err.message || "A dish on this order no longer exists.",
+      ORDER_ADDON_NOT_FOUND: err.message || "An add-on on this order was removed.",
     };
     return { ok: false, error: map[err.code] ?? err.message ?? "Operation failed." };
   }
@@ -78,6 +82,22 @@ export async function markUnpaidAction(id: string): Promise<ActionResult> {
   try {
     await markOrderUnpaid(user, id);
     revalidateOrderPaths(id);
+    return { ok: true };
+  } catch (err) {
+    return toError(err);
+  }
+}
+
+// Hard-deletes an order. The caller (a client component) navigates away on
+// success, since the order's own detail page no longer exists.
+export async function deleteOrderAction(id: string): Promise<ActionResult> {
+  const user = await requireUser();
+  if (!user) return { ok: false, error: "Sign in first." };
+  try {
+    await deleteOrder(user, id);
+    revalidatePath("/admin");
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/kitchen");
     return { ok: true };
   } catch (err) {
     return toError(err);
