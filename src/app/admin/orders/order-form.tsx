@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Minus, Plus, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -95,6 +96,9 @@ export function OrderForm({ menu, order }: { menu: MenuItem[]; order?: Order }) 
   );
   const [notes, setNotes] = useState(order?.notes ?? "");
   const [search, setSearch] = useState("");
+  // Create-only: whether placing the invoice also emails it to the customer.
+  // Off by default — invoices stay admin-only unless the admin opts in.
+  const [emailCustomer, setEmailCustomer] = useState(false);
 
   // --- line helpers ---
   const addItem = (itemId: string) =>
@@ -230,7 +234,7 @@ export function OrderForm({ menu, order }: { menu: MenuItem[]; order?: Order }) 
         router.push(`/admin/orders/${order.id}`);
         router.refresh();
       } else {
-        const r = await createOrderAction(payload);
+        const r = await createOrderAction(payload, emailCustomer);
         if (!r.ok || !r.orderId) {
           setError(r.error ?? "Could not create the order.");
           return;
@@ -487,6 +491,38 @@ export function OrderForm({ menu, order }: { menu: MenuItem[]; order?: Order }) 
           placeholder="e.g. customer will collect at 6pm"
         />
       </Section>
+
+      {/* Customer email — create only */}
+      {!isEdit ? (
+        <Section
+          title="Customer email"
+          description="Send the customer their invoice by email, or leave it unticked to keep this invoice admin-only."
+        >
+          <label
+            htmlFor="emailCustomer"
+            className="flex cursor-pointer items-start gap-3"
+          >
+            <Checkbox
+              id="emailCustomer"
+              checked={emailCustomer}
+              onCheckedChange={(checked) =>
+                setEmailCustomer(checked === true)
+              }
+              className="mt-0.5"
+            />
+            <span className="text-sm">
+              <span className="font-medium">
+                Email this invoice to the customer
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                They&apos;ll get the order confirmation + tracking email. Needs
+                a customer email entered above. The in-app kitchen ticket and
+                the staff email go out either way.
+              </span>
+            </span>
+          </label>
+        </Section>
+      ) : null}
 
       {error ? (
         <div

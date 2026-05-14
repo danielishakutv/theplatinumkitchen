@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowUpRight, Search, Receipt } from "lucide-react";
+import { ArrowUpRight, Download, Plus, Search, Receipt } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { listOrders } from "@/modules/orders";
+import { can } from "@/modules/users";
 import { formatNaira, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -27,9 +28,17 @@ export default async function InvoicesPage() {
             Invoices
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every order generates an invoice automatically.
+            Every order is an invoice — create one here, download a PDF, or open
+            it to manage.
           </p>
         </div>
+        {can(user, "orders:write") ? (
+          <Button asChild className="h-11 rounded-full px-5">
+            <Link href="/admin/orders/new">
+              <Plus className="mr-1.5 h-4 w-4" /> New invoice
+            </Link>
+          </Button>
+        ) : null}
       </header>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -122,16 +131,33 @@ export default async function InvoicesPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-1 rounded-full"
-                      >
-                        <Link href={`/admin/orders/${order.id}`}>
-                          View <ArrowUpRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0"
+                        >
+                          <a
+                            href={`/invoice/${order.id}/pdf`}
+                            download
+                            title={`Download invoice ${order.number}`}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            <span className="sr-only">Download PDF</span>
+                          </a>
+                        </Button>
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 gap-1 rounded-full"
+                        >
+                          <Link href={`/admin/orders/${order.id}`}>
+                            View <ArrowUpRight className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

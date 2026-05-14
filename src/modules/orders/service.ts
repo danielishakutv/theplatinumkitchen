@@ -240,6 +240,12 @@ export interface CreateOrderResult {
 export async function createOrderFromCart(input: {
   payload: PlaceOrderInput;
   userId?: string;
+  // Whether to email the customer their confirmation/invoice. Defaults to
+  // true (customer checkout always confirms). The admin invoice builder
+  // passes its "email the customer" checkbox here — unticked = no customer
+  // email, so the invoice stays admin-only. The staff email + in-app kitchen
+  // ticket fire regardless.
+  emailCustomerOnCreate?: boolean;
 }): Promise<CreateOrderResult> {
   const parsed = placeOrderSchema.safeParse(input.payload);
   if (!parsed.success) {
@@ -400,8 +406,9 @@ export async function createOrderFromCart(input: {
 
   // Fire-and-forget the customer confirmation email. Don't block the order
   // creation response — any Resend error gets logged inside the notifications
-  // module but doesn't roll back the order.
-  if (created.customer.email) {
+  // module but doesn't roll back the order. Admin invoices can opt out via
+  // `emailCustomerOnCreate` (the "email the customer" checkbox).
+  if (created.customer.email && input.emailCustomerOnCreate !== false) {
     sendOrderReceivedEmail({
       to: created.customer.email,
       customerFirstName: created.customer.name.split(" ")[0] || created.customer.name,

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Bike,
+  Download,
   ExternalLink,
   MapPin,
   Pencil,
@@ -270,6 +271,16 @@ function Summary({ order }: { order: Order }) {
           ) : null}
         </Card>
 
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="h-9 w-full gap-1.5 rounded-full"
+        >
+          <a href={`/invoice/${order.id}/pdf`} download>
+            <Download className="h-3.5 w-3.5" /> Download invoice
+          </a>
+        </Button>
         <Button
           asChild
           variant="outline"
