@@ -1,9 +1,11 @@
 # Production stack for Platinum Kitchen.
-# Run on the VPS with:
-#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+# Deploy on the VPS in two steps so the old container keeps serving while the
+# (slow) image build runs — then the swap is just a few seconds:
+#   git pull
+#   docker compose -f docker-compose.prod.yml --env-file .env.production build
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --wait
 #
-# The host's Nginx (already configured for other domains) reverse-proxies both
-# theplatinumkitchen.com and api.theplatinumkitchen.com to 127.0.0.1:3000.
+# The host's Apache reverse-proxies theplatinumkitchen.com to 127.0.0.1:3003.
 # Nothing in this file binds to public ports.
 
 services:
@@ -37,6 +39,17 @@ services:
       # itself always listens on 3000 internally; the left number is the host
       # port and is what you change per-instance when running multiple apps.
       - "127.0.0.1:3003:3000"
+    healthcheck:
+      # Hits the no-DB /api/health route. `up -d --wait` blocks on this, so a
+      # deploy only "finishes" once the new container is actually serving —
+      # and a wedged container is detectable instead of silently 500ing.
+      test:
+        - CMD-SHELL
+        - node -e "require('http').get('http://127.0.0.1:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     networks:
       - pk-net
 
