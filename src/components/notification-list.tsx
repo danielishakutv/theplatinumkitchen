@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
 import {
   BadgeCheck,
   Bell,
   Bike,
   CheckCheck,
-  Loader2,
   ShoppingBag,
 } from "lucide-react";
 import { formatRelative } from "@/lib/format";
@@ -17,10 +15,6 @@ import type {
   NotificationType,
 } from "@/modules/notifications/types";
 import { useNotifications } from "@/components/notifications/use-notifications";
-import {
-  markNotificationReadAction,
-  markAllNotificationsReadAction,
-} from "@/components/notifications/actions";
 
 const TYPE_ICON: Record<NotificationType, typeof Bell> = {
   order_placed: ShoppingBag,
@@ -37,23 +31,7 @@ const TYPE_TONE: Record<NotificationType, string> = {
 // Live notifications list. `orderHrefBase` is the route a notification deep-
 // links into — "/admin/orders" for staff, "/order" for customers.
 export function NotificationList({ orderHrefBase }: { orderHrefBase: string }) {
-  const { items, unreadCount, setItems } = useNotifications();
-  const [pending, start] = useTransition();
-
-  const markOneRead = (id: string) => {
-    setItems(
-      (prev) =>
-        prev?.map((n) => (n.id === id ? { ...n, read: true } : n)) ?? prev,
-    );
-    void markNotificationReadAction(id);
-  };
-
-  const markAll = () => {
-    start(async () => {
-      await markAllNotificationsReadAction();
-      setItems((prev) => prev?.map((n) => ({ ...n, read: true })) ?? prev);
-    });
-  };
+  const { items, unreadCount, markRead, markAllRead } = useNotifications();
 
   return (
     <div className="space-y-4">
@@ -68,15 +46,10 @@ export function NotificationList({ orderHrefBase }: { orderHrefBase: string }) {
         {unreadCount > 0 ? (
           <button
             type="button"
-            onClick={markAll}
-            disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-full border border-platinum-300 px-3 py-1.5 text-xs font-medium text-foreground/80 transition-colors hover:bg-accent disabled:opacity-60"
+            onClick={markAllRead}
+            className="inline-flex items-center gap-1.5 rounded-full border border-platinum-300 px-3 py-1.5 text-xs font-medium text-foreground/80 transition-colors hover:bg-accent"
           >
-            {pending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CheckCheck className="h-3.5 w-3.5" />
-            )}
+            <CheckCheck className="h-3.5 w-3.5" />
             Mark all read
           </button>
         ) : null}
@@ -100,7 +73,7 @@ export function NotificationList({ orderHrefBase }: { orderHrefBase: string }) {
               <NotificationRow
                 notification={n}
                 orderHrefBase={orderHrefBase}
-                onRead={markOneRead}
+                onRead={markRead}
               />
             </li>
           ))}

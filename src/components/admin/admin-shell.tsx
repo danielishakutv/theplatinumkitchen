@@ -164,7 +164,10 @@ export function AdminShell({
               className="h-10 rounded-full border-platinum-200 bg-platinum-50 pl-9"
             />
           </div>
-          <NotificationBell href="/admin/notifications" />
+          <NotificationBell
+            notificationsHref="/admin/notifications"
+            orderHrefBase="/admin/orders"
+          />
           <Button asChild variant="outline" size="sm" className="hidden h-9 rounded-full sm:inline-flex">
             <Link href="/menu">View site</Link>
           </Button>
