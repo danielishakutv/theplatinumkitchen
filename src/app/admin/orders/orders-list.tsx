@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { useDeferredValue, useMemo, useState } from "react";
-import { ArrowUpRight, Search, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  Bike,
+  ChevronRight,
+  Search,
+  Store,
+  Utensils,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatNaira, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { Order, OrderStatus } from "@/modules/orders";
+import type { Order, OrderStatus, FulfilmentMethod } from "@/modules/orders";
 
 const STATUS_TABS: { value: OrderStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -19,7 +27,7 @@ const STATUS_TABS: { value: OrderStatus | "all"; label: string }[] = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-const STATUS_STYLES: Record<string, string> = {
+const STATUS_STYLES: Record<OrderStatus, string> = {
   received: "bg-blue-100 text-blue-800",
   preparing: "bg-amber-100 text-amber-800",
   ready: "bg-emerald-100 text-emerald-800",
@@ -28,11 +36,51 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: "bg-red-50 text-red-700",
 };
 
+const FULFILMENT_ICON: Record<FulfilmentMethod, typeof Bike> = {
+  delivery: Bike,
+  pickup: Store,
+  dine_in: Utensils,
+};
+
+function humanize(s: string): string {
+  return s.replace(/_/g, " ");
+}
+
 function normalize(s: string): string {
   return s.toLowerCase().normalize("NFKD");
 }
 
-export function OrdersTable({ orders }: { orders: Order[] }) {
+function StatusBadge({ status }: { status: OrderStatus }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+        STATUS_STYLES[status],
+      )}
+    >
+      {humanize(status)}
+    </span>
+  );
+}
+
+function PaymentBadge({ status }: { status: Order["paymentStatus"] }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+        status === "paid"
+          ? "bg-emerald-100 text-emerald-800"
+          : status === "refunded"
+            ? "bg-platinum-200 text-platinum-700"
+            : "bg-amber-100 text-amber-800",
+      )}
+    >
+      {status}
+    </span>
+  );
+}
+
+export function OrdersList({ orders }: { orders: Order[] }) {
   const [tab, setTab] = useState<(typeof STATUS_TABS)[number]["value"]>("all");
   const [query, setQuery] = useState("");
   const deferred = useDeferredValue(query);
@@ -53,12 +101,13 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-platinum-200 bg-card p-3">
-        <div className="relative flex-1 min-w-[14rem]">
+      {/* Search */}
+      <div className="rounded-2xl border border-platinum-200 bg-card p-3">
+        <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by number, name, phone, email…"
+            placeholder="Search number, name, phone, email…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="h-10 rounded-full border-platinum-200 bg-platinum-50 pl-9 pr-10"
@@ -77,6 +126,7 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
         </div>
       </div>
 
+      {/* Status filter chips — horizontal scroll is fine for filters */}
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div className="flex min-w-max items-center gap-1.5">
           {STATUS_TABS.map((t) => {
@@ -113,13 +163,23 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-3xl border border-platinum-200 bg-card">
-        {filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-sm text-muted-foreground">No orders to show.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
+      {filtered.length === 0 ? (
+        <div className="rounded-3xl border border-platinum-200 bg-card p-12 text-center">
+          <p className="text-sm text-muted-foreground">No orders to show.</p>
+        </div>
+      ) : (
+        <>
+          {/* Mobile + tablet: tappable card list, no horizontal scrolling */}
+          <ul className="space-y-3 lg:hidden">
+            {filtered.map((order) => (
+              <li key={order.id}>
+                <OrderCard order={order} />
+              </li>
+            ))}
+          </ul>
+
+          {/* Desktop: full table for dense scanning */}
+          <div className="hidden overflow-hidden rounded-3xl border border-platinum-200 bg-card lg:block">
             <table className="min-w-full text-sm">
               <thead className="border-b border-platinum-200 bg-platinum-50/60 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                 <tr>
@@ -148,34 +208,16 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                          STATUS_STYLES[order.status] ?? "",
-                        )}
-                      >
-                        {order.status.replace("_", " ")}
-                      </span>
+                      <StatusBadge status={order.status} />
                     </td>
                     <td className="px-5 py-4 text-xs uppercase tracking-wider text-muted-foreground">
-                      {order.fulfilment.replace("_", " ")}
+                      {humanize(order.fulfilment)}
                     </td>
                     <td className="px-5 py-4 text-right font-semibold tabular-nums">
                       {formatNaira(order.total)}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                          order.paymentStatus === "paid"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : order.paymentStatus === "refunded"
-                              ? "bg-platinum-200 text-platinum-700"
-                              : "bg-amber-100 text-amber-800",
-                        )}
-                      >
-                        {order.paymentStatus}
-                      </span>
+                      <PaymentBadge status={order.paymentStatus} />
                     </td>
                     <td className="px-5 py-4 text-right">
                       <Button
@@ -194,8 +236,55 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
+  );
+}
+
+function OrderCard({ order }: { order: Order }) {
+  const FulfilmentIcon = FULFILMENT_ICON[order.fulfilment];
+  const itemCount = order.lines.reduce((s, l) => s + l.quantity, 0);
+
+  return (
+    <Link
+      href={`/admin/orders/${order.id}`}
+      className="block rounded-2xl border border-platinum-200 bg-card p-4 transition-colors hover:border-platinum-300 active:bg-platinum-50"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-display text-base font-semibold tabular-nums">
+            {order.number}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {formatRelative(order.createdAt)} · {itemCount}{" "}
+            {itemCount === 1 ? "item" : "items"}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <p className="font-display text-lg font-semibold tabular-nums">
+            {formatNaira(order.total)}
+          </p>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+
+      <div className="mt-2 flex items-baseline gap-1.5 text-sm">
+        <span className="truncate font-medium">{order.customer.name}</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {order.customer.phone}
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <StatusBadge status={order.status} />
+        <PaymentBadge status={order.paymentStatus} />
+        <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <FulfilmentIcon className="h-3.5 w-3.5" />
+          {humanize(order.fulfilment)}
+        </span>
+      </div>
+    </Link>
   );
 }

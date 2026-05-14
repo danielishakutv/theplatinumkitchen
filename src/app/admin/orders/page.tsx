@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { listOrders } from "@/modules/orders";
-import { OrdersTable } from "./orders-table";
+import { OrdersList } from "./orders-list";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Orders" };
@@ -20,7 +20,7 @@ export default async function OrdersPage() {
           {orders.length} order{orders.length === 1 ? "" : "s"} — most recent first.
         </p>
       </header>
-      <OrdersTable orders={orders} />
+      <OrdersList orders={orders} />
     </div>
   );
 }
