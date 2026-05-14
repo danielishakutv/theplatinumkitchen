@@ -63,13 +63,29 @@ function parseAddonGroupIds(formData: FormData): string[] {
     .filter(Boolean);
 }
 
+// Server-side safety net: the form auto-fills the slug from the name, but if
+// it ever arrives empty, derive it here so the only truly required field a
+// user must fill is the dish name.
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100);
+}
+
 export async function createItemAction(formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
   if (!user) return { ok: false, error: "Sign in first." };
 
+  const name = String(formData.get("name") ?? "").trim();
+  const slug =
+    String(formData.get("slug") ?? "").trim() || slugify(name);
+
   const input: CreateItemInput = {
-    slug: String(formData.get("slug") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    slug,
+    name,
     description: String(formData.get("description") ?? "").trim(),
     price: parsePrice(formData.get("price")),
     imageUrl: String(formData.get("imageUrl") ?? "").trim(),

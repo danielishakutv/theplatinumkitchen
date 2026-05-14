@@ -28,6 +28,15 @@ interface Props {
   item?: MenuItem;
 }
 
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100);
+}
+
 export function ItemForm({ mode, categories, addonGroups, item }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -43,6 +52,17 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
 
   const isEdit = mode === "edit";
 
+  // Name drives the slug automatically on create. The slug field stays
+  // editable — once the user touches it manually we stop overwriting it.
+  const [name, setName] = useState(item?.name ?? "");
+  const [slug, setSlug] = useState(item?.slug ?? "");
+  const [slugTouched, setSlugTouched] = useState(false);
+
+  const handleNameChange = (v: string) => {
+    setName(v);
+    if (!isEdit && !slugTouched) setSlug(slugify(v));
+  };
+
   const toggleAddon = (id: string, checked: boolean) => {
     setSelectedAddonIds((prev) => {
       if (checked) return prev.includes(id) ? prev : [...prev, id];
@@ -57,6 +77,8 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
     fd.set("available", available ? "on" : "");
     fd.set("notesEnabled", notesEnabled ? "on" : "");
     fd.set("categorySlug", categorySlug);
+    // Slug is derived from the name when the user hasn't typed one.
+    fd.set("slug", (slug.trim() || slugify(name)));
     fd.delete("addonGroupIds");
     for (const id of selectedAddonIds) fd.append("addonGroupIds", id);
 
@@ -112,7 +134,8 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
                 id="name"
                 name="name"
                 required
-                defaultValue={item?.name ?? ""}
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Classic Jollof Rice"
                 className="h-11"
               />
@@ -120,15 +143,16 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
             <Field
               label="Slug"
               htmlFor="slug"
-              hint="Used in the public URL — lowercase letters, numbers, dashes."
+              hint="Auto-filled from the name. Used in the public URL — only edit if you need a specific one."
             >
               <Input
                 id="slug"
-                name="slug"
-                required
-                defaultValue={item?.slug ?? ""}
-                placeholder="classic-jollof"
-                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                value={slug}
+                onChange={(e) => {
+                  setSlug(slugify(e.target.value));
+                  setSlugTouched(true);
+                }}
+                placeholder="auto-generated from name"
                 className="h-11 font-mono"
               />
             </Field>
@@ -151,14 +175,17 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
           description="Price in Naira, expected prep time, and which category this lives under."
         >
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Price (₦)" htmlFor="price">
+            <Field
+              label="Price (₦)"
+              htmlFor="price"
+              hint="Leave at 0 if you'll set it later."
+            >
               <Input
                 id="price"
                 name="price"
                 type="number"
                 min={0}
                 step={50}
-                required
                 defaultValue={item?.price ?? 0}
                 className="h-11 tabular-nums"
               />
