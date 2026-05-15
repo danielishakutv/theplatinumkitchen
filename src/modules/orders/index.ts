@@ -47,6 +47,8 @@ export {
   deleteOrder,
   markOrderPaid,
   markOrderUnpaid,
+  getPopularItems,
+  type PopularItem,
 } from "./service";
 
 export { orders, orderLines, invoiceCounters } from "./schema";

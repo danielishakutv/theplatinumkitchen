@@ -3,15 +3,14 @@ import Image from "next/image";
 import {
   TrendingUp,
   ShoppingBag,
-  Clock,
+  Receipt,
   Wallet,
   ArrowUpRight,
   ChefHat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { listOrders } from "@/modules/orders";
-import { listItems } from "@/modules/menu";
+import { getPopularItems, listOrders } from "@/modules/orders";
 import { ROLE_LABEL, listStaff, can } from "@/modules/users";
 
 export const dynamic = "force-dynamic";
@@ -24,23 +23,66 @@ export default async function AdminOverviewPage() {
   const user = session!.user; // layout already redirected if missing
 
   const today = new Date();
-  const todayKey = today.toDateString();
-  const orders = can(user, "orders:read")
-    ? await listOrders(user, { limit: 200 })
-    : [];
-  const todays = orders.filter(
-    (o) => new Date(o.createdAt).toDateString() === todayKey,
+  const todayStart = new Date(today);
+  todayStart.setHours(0, 0, 0, 0);
+  const yesterdayStart = new Date(
+    todayStart.getTime() - 24 * 60 * 60 * 1000,
   );
-  const revenue = todays
-    .filter((o) => o.status !== "cancelled")
-    .reduce((sum, o) => sum + o.total, 0);
+
+  const orders = can(user, "orders:read")
+    ? await listOrders(user, { limit: 500 })
+    : [];
+
+  const todays = orders.filter(
+    (o) => new Date(o.createdAt) >= todayStart,
+  );
+  const yesterdays = orders.filter((o) => {
+    const t = new Date(o.createdAt);
+    return t >= yesterdayStart && t < todayStart;
+  });
+
+  const sumRevenue = (xs: typeof orders) =>
+    xs
+      .filter((o) => o.status !== "cancelled")
+      .reduce((s, o) => s + o.total, 0);
+  const revenue = sumRevenue(todays);
+  const yesterdayRevenue = sumRevenue(yesterdays);
+  const aovToday =
+    todays.length > 0 ? Math.round(revenue / todays.length) : 0;
+  const aovYesterday =
+    yesterdays.length > 0
+      ? Math.round(yesterdayRevenue / yesterdays.length)
+      : 0;
+
   const active = orders.filter(
     (o) => !["delivered", "cancelled"].includes(o.status),
   );
-  const allItems = await listItems();
-  const popular = allItems
-    .filter((i) => i.tags?.includes("chef's-pick"))
-    .slice(0, 4);
+
+  const popular = can(user, "orders:read")
+    ? await getPopularItems(user, { days: 7, limit: 4 })
+    : [];
+
+  // Day-over-day delta strings. Pct change for money; absolute diff for counts.
+  // When there's no yesterday baseline we hide the delta rather than fabricate
+  // one — same reason: keep the dashboard honest.
+  const pctDelta = (now: number, prev: number) => {
+    if (prev <= 0) return null;
+    const pct = Math.round(((now - prev) / prev) * 100);
+    return {
+      text: `${pct >= 0 ? "+" : ""}${pct}% vs yesterday`,
+      positive: pct >= 0,
+    };
+  };
+  const diffDelta = (now: number, prev: number) => {
+    const d = now - prev;
+    return {
+      text: `${d >= 0 ? "+" : ""}${d} vs yesterday`,
+      positive: d >= 0,
+    };
+  };
+  const revenueDelta = pctDelta(revenue, yesterdayRevenue);
+  const ordersDelta = diffDelta(todays.length, yesterdays.length);
+  const aovDelta = pctDelta(aovToday, aovYesterday);
 
   const onShift = can(user, "users:read") ? await listStaff(user) : [];
   const firstName = user.name?.split(" ")[0] ?? "there";
@@ -76,15 +118,15 @@ export default async function AdminOverviewPage() {
         <Stat
           label="Revenue today"
           value={formatNaira(revenue)}
-          delta="+18%"
-          deltaPositive
+          delta={revenueDelta?.text}
+          deltaPositive={revenueDelta?.positive}
           Icon={Wallet}
         />
         <Stat
           label="Orders today"
           value={String(todays.length)}
-          delta="+4"
-          deltaPositive
+          delta={ordersDelta.text}
+          deltaPositive={ordersDelta.positive}
           Icon={ShoppingBag}
         />
         <Stat
@@ -94,11 +136,11 @@ export default async function AdminOverviewPage() {
           Icon={ChefHat}
         />
         <Stat
-          label="Avg prep time"
-          value="22 min"
-          delta="-3 min"
-          deltaPositive
-          Icon={Clock}
+          label="Avg order value today"
+          value={formatNaira(aovToday)}
+          delta={aovDelta?.text}
+          deltaPositive={aovDelta?.positive}
+          Icon={Receipt}
         />
       </div>
 
@@ -155,37 +197,52 @@ export default async function AdminOverviewPage() {
           <header className="flex items-center justify-between border-b border-platinum-200 px-6 py-4">
             <div>
               <h2 className="font-display text-xl">Popular this week</h2>
-              <p className="text-xs text-muted-foreground">By order count</p>
+              <p className="text-xs text-muted-foreground">
+                Last 7 days, by units sold
+              </p>
             </div>
             <TrendingUp className="h-4 w-4 text-primary" />
           </header>
-          <ul className="divide-y divide-platinum-200">
-            {popular.map((item, i) => (
-              <li key={item.id} className="flex items-center gap-3 px-6 py-3.5">
-                <span className="w-5 text-center text-xs font-semibold tabular-nums text-muted-foreground">
-                  {i + 1}
-                </span>
-                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-platinum-100">
-                  <Image
-                    src={item.imageUrl}
-                    alt=""
-                    fill
-                    sizes="44px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {formatNaira(item.price)}
-                  </p>
-                </div>
-                <span className="font-display text-sm font-semibold tabular-nums">
-                  {[42, 31, 28, 24][i] ?? 0}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {popular.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              No sales yet this week.
+            </p>
+          ) : (
+            <ul className="divide-y divide-platinum-200">
+              {popular.map((item, i) => (
+                <li
+                  key={item.itemId}
+                  className="flex items-center gap-3 px-6 py-3.5"
+                >
+                  <span className="w-5 text-center text-xs font-semibold tabular-nums text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-platinum-100">
+                    {item.imageUrl ? (
+                      <Image
+                        src={item.imageUrl}
+                        alt=""
+                        fill
+                        sizes="44px"
+                        className="object-cover"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {item.itemName}
+                    </p>
+                  </div>
+                  <span className="font-display text-sm font-semibold tabular-nums">
+                    {item.totalQuantity}
+                    <span className="ml-1 text-xs font-medium text-muted-foreground">
+                      sold
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 

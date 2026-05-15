@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { menuAddonOptions, menuItems } from "@/modules/menu/schema";
 import { requirePermission, type ActorLike } from "@/modules/users/permissions";
@@ -804,4 +804,45 @@ export async function deleteOrder(actor: ActorLike, id: string): Promise<void> {
     .limit(1);
   if (!existing) throw new OrderServiceError("ORDER_NOT_FOUND");
   await db.delete(orders).where(eq(orders.id, id));
+}
+
+export interface PopularItem {
+  itemId: string;
+  itemName: string;
+  imageUrl: string;
+  totalQuantity: number;
+}
+
+// Top dishes by units sold over the last `days` days, excluding cancelled
+// orders. The name/image come from the order_lines snapshot, so a renamed or
+// deleted menu item still shows up here under whatever it was sold as.
+export async function getPopularItems(
+  actor: ActorLike,
+  options: { days?: number; limit?: number } = {},
+): Promise<PopularItem[]> {
+  requirePermission(actor, "orders:read");
+  const days = options.days ?? 7;
+  const limit = options.limit ?? 5;
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const totalQty = sql<number>`sum(${orderLines.quantity})::int`;
+  const rows = await db
+    .select({
+      itemId: orderLines.itemId,
+      itemName: orderLines.itemName,
+      imageUrl: orderLines.imageUrl,
+      totalQuantity: totalQty,
+    })
+    .from(orderLines)
+    .innerJoin(orders, eq(orderLines.orderId, orders.id))
+    .where(and(gte(orders.createdAt, since), ne(orders.status, "cancelled")))
+    .groupBy(orderLines.itemId, orderLines.itemName, orderLines.imageUrl)
+    .orderBy(desc(totalQty))
+    .limit(limit);
+  return rows.map((r) => ({
+    itemId: r.itemId,
+    itemName: r.itemName,
+    imageUrl: r.imageUrl,
+    totalQuantity: Number(r.totalQuantity),
+  }));
 }
