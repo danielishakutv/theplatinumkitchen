@@ -127,6 +127,11 @@ export function ItemDetailDialog({
     });
   };
 
+  // Live stock cap for the qty stepper. `null` here = untracked (no cap).
+  const stockCap = item.stockQuantity ?? null;
+  const clampQty = (n: number) =>
+    Math.max(1, stockCap != null ? Math.min(stockCap, n) : n);
+
   const handleAdd = () => {
     if (validationErrors.length > 0) return;
     addLine({
@@ -134,9 +139,10 @@ export function ItemDetailDialog({
       name: item.name,
       imageUrl: item.imageUrl,
       unitPrice: item.price,
-      quantity,
+      quantity: clampQty(quantity),
       addons: selectedAddons,
       notes: notes.trim() || undefined,
+      stockQuantity: item.stockQuantity ?? null,
     });
     toast.success(`${item.name} added`, {
       action: { label: "View cart", onClick: openCart },
@@ -207,7 +213,18 @@ export function ItemDetailDialog({
 
           <div className="border-t border-platinum-200 bg-platinum-50/60 px-6 py-4 sm:px-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <QtyStepper value={quantity} onChange={setQuantity} />
+              <div className="flex flex-col items-start gap-1">
+                <QtyStepper
+                  value={quantity}
+                  onChange={(n) => setQuantity(clampQty(n))}
+                  max={stockCap ?? undefined}
+                />
+                {stockCap != null && stockCap > 0 ? (
+                  <span className="text-[11px] font-medium text-amber-700">
+                    Only {stockCap} left
+                  </span>
+                ) : null}
+              </div>
               <Button
                 size="lg"
                 className="h-12 flex-1 min-w-[14rem] rounded-full text-base font-medium shadow-lg shadow-primary/15"
@@ -301,10 +318,15 @@ function AddonGroupSection({
 function QtyStepper({
   value,
   onChange,
+  max,
 }: {
   value: number;
   onChange: (n: number) => void;
+  // Optional ceiling — when set, the + button is disabled at this value.
+  // null/undefined = no cap (untracked stock).
+  max?: number;
 }) {
+  const atMax = max != null && value >= max;
   return (
     <div className="inline-flex items-center rounded-full border border-platinum-200 bg-card">
       <button
@@ -318,8 +340,11 @@ function QtyStepper({
       <span className="w-8 text-center font-medium tabular-nums">{value}</span>
       <button
         type="button"
-        onClick={() => onChange(value + 1)}
-        className="grid h-11 w-11 place-items-center rounded-full text-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+        onClick={() =>
+          onChange(max != null ? Math.min(max, value + 1) : value + 1)
+        }
+        disabled={atMax}
+        className="grid h-11 w-11 place-items-center rounded-full text-foreground/70 transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-foreground/70"
         aria-label="Increase quantity"
       >
         <Plus className="h-4 w-4" />

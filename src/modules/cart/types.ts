@@ -16,6 +16,11 @@ export interface CartLine {
   quantity: number;
   addons: CartLineAddon[];
   notes?: string;
+  // Stock snapshot taken when the item was added. `null`/`undefined` =
+  // untracked (no cap). The cart UI uses this to cap the quantity stepper
+  // and show "X left" hints. The server re-checks atomically at order
+  // submission — this is UX, not the security wall.
+  stockQuantity?: number | null;
 }
 
 export interface CartTotals {

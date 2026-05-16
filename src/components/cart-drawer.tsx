@@ -135,11 +135,19 @@ export function CartDrawer() {
                           <QuantityStepper
                             value={line.quantity}
                             onChange={(q) => setQuantity(line.id, q)}
+                            max={line.stockQuantity ?? undefined}
                           />
                           <span className="text-sm font-semibold tabular-nums">
                             {formatNaira(unit * line.quantity)}
                           </span>
                         </div>
+                        {line.stockQuantity != null &&
+                        line.stockQuantity > 0 &&
+                        line.stockQuantity <= 5 ? (
+                          <p className="mt-1 text-[11px] font-medium text-amber-700">
+                            Only {line.stockQuantity} left
+                          </p>
+                        ) : null}
                         {line.notes !== undefined ? (
                           <Textarea
                             value={line.notes ?? ""}
@@ -224,10 +232,15 @@ function EmptyState({ onClose }: { onClose: () => void }) {
 function QuantityStepper({
   value,
   onChange,
+  max,
 }: {
   value: number;
   onChange: (v: number) => void;
+  // Optional ceiling — disables the + button when reached. null/undefined =
+  // no cap (untracked stock).
+  max?: number;
 }) {
+  const atMax = max != null && value >= max;
   return (
     <div className="inline-flex items-center rounded-full border border-platinum-200 bg-card">
       <button
@@ -241,8 +254,11 @@ function QuantityStepper({
       <span className="w-7 text-center text-sm font-medium tabular-nums">{value}</span>
       <button
         type="button"
-        onClick={() => onChange(value + 1)}
-        className="grid h-8 w-8 place-items-center rounded-full text-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+        onClick={() =>
+          onChange(max != null ? Math.min(max, value + 1) : value + 1)
+        }
+        disabled={atMax}
+        className="grid h-8 w-8 place-items-center rounded-full text-foreground/70 transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-foreground/70"
         aria-label="Increase"
       >
         <Plus className="h-3.5 w-3.5" />

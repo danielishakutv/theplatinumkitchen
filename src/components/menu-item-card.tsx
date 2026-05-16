@@ -68,11 +68,23 @@ export function MenuItemCard({ item, onOpen }: MenuItemCardProps) {
       unitPrice: item.price,
       quantity: 1,
       addons: [],
+      stockQuantity: item.stockQuantity ?? null,
     });
     toast.success(`${item.name} added`, {
       action: { label: "View cart", onClick: openCart },
     });
   };
+
+  // "Only X left" urgency badge: only shown when stock is tracked, still has
+  // units, and is at or below the warning level (falls back to 5 when the
+  // admin hasn't set one). Same item.stockQuantity also caps add-to-cart in
+  // the dialog and drawer.
+  const stockBadge =
+    item.stockQuantity != null &&
+    item.stockQuantity > 0 &&
+    item.stockQuantity <= (item.lowStockThreshold ?? 5)
+      ? item.stockQuantity
+      : null;
 
   return (
     <>
@@ -121,6 +133,13 @@ export function MenuItemCard({ item, onOpen }: MenuItemCardProps) {
                   </span>
                 );
               })}
+            </div>
+          ) : null}
+          {stockBadge !== null && isItemAvailable(item) ? (
+            <div className="absolute right-3 top-3">
+              <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 ring-1 ring-inset ring-amber-200">
+                Only {stockBadge} left
+              </span>
             </div>
           ) : null}
           {!isItemAvailable(item) ? (
