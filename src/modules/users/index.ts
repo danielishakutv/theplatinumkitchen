@@ -20,10 +20,14 @@ export {
   findByEmail,
   listStaff,
   createUser,
+  updateUser,
+  deleteUser,
   setUserActive,
   setUserRole,
   verifyCredentials,
   recordLogin,
+  UserServiceError,
+  type UserServiceErrorCode,
 } from "./service";
 export { users, userRoleEnum, type UserRow, type NewUserRow } from "./schema";
 // `staffUsers` is intentionally NOT re-exported — it's a seed source only.
