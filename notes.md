@@ -3,8 +3,11 @@ git pull
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 
 
-
 cd /home/theplatinumkitchen/app
+git pull
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+
 git pull
 
 # payment_method enum gains 'bank_transfer' + 4 new settings columns
