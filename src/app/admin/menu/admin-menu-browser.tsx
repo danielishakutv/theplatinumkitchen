@@ -151,46 +151,74 @@ function CategorizedList({
 }
 
 function ItemRow({ item, actor }: { item: MenuItem; actor: ActorLike }) {
+  const variations = item.addonGroups?.length ?? 0;
   return (
     <li
       className={cn(
-        "flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4",
+        "px-4 py-4 sm:px-6",
         !item.available && "opacity-60",
       )}
     >
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-platinum-100 sm:h-14 sm:w-14">
-        {item.imageUrl ? (
-          <Image src={item.imageUrl} alt="" fill sizes="56px" className="object-cover" />
-        ) : null}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="truncate font-medium">{item.name}</p>
-          {item.tags?.includes("chef's-pick") ? (
-            <span className="rounded-full bg-accent px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary">
-              Pick
-            </span>
-          ) : null}
-          {!item.available ? (
-            <span className="rounded-full bg-platinum-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-              Sold out
-            </span>
+      <div className="flex items-start gap-3.5 sm:items-center sm:gap-4">
+        {/* Thumbnail — comfortably larger on phone for a more legible row */}
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-platinum-100 ring-1 ring-platinum-200 sm:h-14 sm:w-14 sm:rounded-lg">
+          {item.imageUrl ? (
+            <Image
+              src={item.imageUrl}
+              alt=""
+              fill
+              sizes="64px"
+              className="object-cover"
+            />
           ) : null}
         </div>
-        <p className="hidden truncate text-xs text-muted-foreground sm:block">
-          {item.description}
-        </p>
-        <p className="mt-0.5 text-xs font-medium tabular-nums text-foreground/80">
-          {formatNaira(item.price)}
-          {(item.addonGroups?.length ?? 0) > 0 ? (
-            <span className="ml-2 text-muted-foreground">
-              · {item.addonGroups!.length} variation
-              {item.addonGroups!.length === 1 ? "" : "s"}
-            </span>
+
+        {/* Info column — name and price share the first line; the rest stacks
+           cleanly underneath. */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="truncate font-medium leading-tight">{item.name}</p>
+            <p className="shrink-0 text-sm font-semibold tabular-nums">
+              {formatNaira(item.price)}
+            </p>
+          </div>
+
+          {item.description ? (
+            <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+              {item.description}
+            </p>
           ) : null}
-        </p>
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {item.tags?.includes("chef's-pick") ? (
+              <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                Pick
+              </span>
+            ) : null}
+            {!item.available ? (
+              <span className="rounded-full bg-platinum-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Sold out
+              </span>
+            ) : null}
+            {variations > 0 ? (
+              <span className="text-[11px] text-muted-foreground">
+                {variations} variation{variations === 1 ? "" : "s"}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Desktop / tablet: compact inline toolbar on the right */}
+        <div className="hidden self-center sm:flex">
+          <RowActions item={item} actor={actor} variant="inline" />
+        </div>
       </div>
-      <RowActions item={item} actor={actor} />
+
+      {/* Phone: actions move to their own row, labelled pill buttons with
+         comfortable touch targets. */}
+      <div className="mt-3 sm:hidden">
+        <RowActions item={item} actor={actor} variant="mobile" />
+      </div>
     </li>
   );
 }
