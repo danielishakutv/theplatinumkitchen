@@ -10,7 +10,10 @@ import {
   setUserActive,
   updateUser,
 } from "@/modules/users";
-import type { UserRole } from "@/modules/users/types";
+import { ROLE_LABEL, type UserRole } from "@/modules/users/types";
+import { sendStaffInvitationEmail } from "@/modules/notifications";
+import { getSettings } from "@/modules/settings";
+import { appUrl } from "@/lib/url";
 
 export interface ActionResult {
   ok: boolean;
@@ -65,13 +68,33 @@ export async function createUserAction(
     return { ok: false, error: "Password must be at least 8 characters." };
   }
   try {
-    await createUser(user, {
+    const created = await createUser(user, {
       name: input.name.trim(),
       email: input.email.trim(),
       password: input.password,
       role: input.role,
       active: input.active,
     });
+
+    // Fire-and-forget invite email. Sending mail is best-effort — if Resend
+    // is down or unconfigured we don't want to roll back a successful user
+    // create. Errors are logged and visible to the admin via server logs.
+    try {
+      const settings = await getSettings();
+      await sendStaffInvitationEmail({
+        to: created.email,
+        name: created.name,
+        email: created.email,
+        password: input.password,
+        roleLabel: ROLE_LABEL[created.role],
+        signInUrl: appUrl("/sign-in"),
+        inviterName: user.name ?? undefined,
+        restaurantName: settings.restaurantName,
+      });
+    } catch (mailErr) {
+      console.error("[admin/users] invite email failed", mailErr);
+    }
+
     revalidateUsers();
     return { ok: true };
   } catch (err) {

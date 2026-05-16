@@ -11,6 +11,7 @@ import {
   renderOrderUpdatedForCustomer,
   renderOrderUpdatedForStaff,
   renderPasswordReset,
+  renderStaffInvitation,
   type OrderEmailLine,
 } from "./templates";
 import { notifications, type NotificationRow } from "./schema";
@@ -167,6 +168,28 @@ export async function sendOrderUpdatedStaffEmail(args: {
     itemCount: args.itemCount,
     lines: args.lines,
     manageUrl: args.manageUrl,
+  });
+  return send(args.to, subject, html, text);
+}
+
+export async function sendStaffInvitationEmail(args: {
+  to: string;
+  name: string;
+  email: string;
+  password: string;
+  roleLabel: string;
+  signInUrl: string;
+  inviterName?: string;
+  restaurantName?: string;
+}): Promise<SendResult> {
+  const { subject, html, text } = renderStaffInvitation({
+    name: args.name,
+    email: args.email,
+    password: args.password,
+    roleLabel: args.roleLabel,
+    signInUrl: args.signInUrl,
+    inviterName: args.inviterName,
+    restaurantName: args.restaurantName,
   });
   return send(args.to, subject, html, text);
 }

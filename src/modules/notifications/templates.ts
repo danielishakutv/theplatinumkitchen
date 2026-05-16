@@ -311,6 +311,69 @@ export function renderOrderUpdatedForStaff(args: {
   return { subject, html, text };
 }
 
+// Sent to a newly-invited staff member with their starter credentials. The
+// password is the cleartext value the admin picked at create time — the
+// caller MUST hand it over before it's hashed, since the hash isn't
+// reversible. After this email goes out, the password lives only in the
+// recipient's inbox and as a one-way bcrypt hash in the DB.
+export function renderStaffInvitation(args: {
+  name: string;
+  email: string;
+  password: string;
+  roleLabel: string;
+  signInUrl: string;
+  inviterName?: string;
+  restaurantName?: string;
+}): { subject: string; html: string; text: string } {
+  const restaurant = args.restaurantName ?? "Platinum Kitchen";
+  const subject = `You've been added to the ${restaurant} team`;
+  const inviterLine = args.inviterName
+    ? `${escapeHtml(args.inviterName)} just added you to the ${escapeHtml(restaurant)} staff console as <strong>${escapeHtml(args.roleLabel)}</strong>.`
+    : `You've been added to the ${escapeHtml(restaurant)} staff console as <strong>${escapeHtml(args.roleLabel)}</strong>.`;
+
+  const html = shell({
+    title: subject,
+    preheader: `Welcome to ${restaurant}. Your sign-in details are inside — please change your password after first login.`,
+    body: `
+      <h1>Welcome, ${escapeHtml(args.name.split(" ")[0] || args.name)} 👋</h1>
+      <p>${inviterLine}</p>
+      <p>Use the credentials below to sign in for the first time. <strong>Please change your password right after you log in</strong> — these starter details were chosen on your behalf and shouldn't stay in your inbox.</p>
+
+      <table role="presentation" style="width:100%;border-collapse:separate;border-spacing:0;background:${PLATINUM_BG};border:1px solid #e2e8f0;border-radius:12px;margin:18px 0;">
+        <tr>
+          <td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;font-size:12px;color:${MUTED};text-transform:uppercase;letter-spacing:0.12em;width:120px;">Email</td>
+          <td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;font-size:14px;color:${TEXT};font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;">
+            ${escapeHtml(args.email)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;font-size:12px;color:${MUTED};text-transform:uppercase;letter-spacing:0.12em;">Temporary password</td>
+          <td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;font-size:14px;color:${TEXT};font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;">
+            ${escapeHtml(args.password)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 18px;font-size:12px;color:${MUTED};text-transform:uppercase;letter-spacing:0.12em;">Role</td>
+          <td style="padding:14px 18px;font-size:14px;color:${TEXT};">
+            ${escapeHtml(args.roleLabel)}
+          </td>
+        </tr>
+      </table>
+
+      <p><a class="btn" href="${escapeHtml(args.signInUrl)}">Sign in to ${escapeHtml(restaurant)}</a></p>
+      <p class="muted">Or paste this URL into your browser:<br />${escapeHtml(args.signInUrl)}</p>
+
+      <p class="muted" style="margin-top:22px;padding:14px 16px;background:#fef3c7;border-radius:10px;color:#78350f;">
+        <strong>One small thing:</strong> after signing in, head to your profile and replace this starter password with one only you know.
+      </p>
+    `,
+  });
+
+  const text = `Welcome to ${restaurant}.\n\n${args.inviterName ? `${args.inviterName} added you` : "You've been added"} to the staff console as ${args.roleLabel}.\n\nSign in: ${args.signInUrl}\n\nEmail: ${args.email}\nTemporary password: ${args.password}\n\nPlease change your password right after first login — head to /account once you're in.\n`;
+
+  return { subject, html, text };
+}
+
 export function renderEmailChangeVerification(args: {
   verifyUrl: string;
   ttlMinutes: number;

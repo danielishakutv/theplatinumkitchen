@@ -6,6 +6,7 @@ import "server-only";
 
 export {
   sendPasswordResetEmail,
+  sendStaffInvitationEmail,
   sendEmailChangeVerification,
   sendOrderReceivedEmail,
   sendNewOrderStaffEmail,
