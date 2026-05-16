@@ -44,6 +44,17 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [available, setAvailable] = useState(item?.available ?? true);
   const [notesEnabled, setNotesEnabled] = useState(item?.notesEnabled ?? true);
+  // Stock state. The DB column is nullable: null = untracked, number = tracked.
+  // The toggle below decides which.
+  const [trackStock, setTrackStock] = useState(
+    (item?.stockQuantity ?? null) !== null,
+  );
+  const [stockQuantity, setStockQuantity] = useState<string>(
+    item?.stockQuantity != null ? String(item.stockQuantity) : "0",
+  );
+  const [lowStockThreshold, setLowStockThreshold] = useState<string>(
+    item?.lowStockThreshold != null ? String(item.lowStockThreshold) : "",
+  );
   const [categorySlug, setCategorySlug] = useState(
     item?.category ?? categories[0]?.slug ?? "",
   );
@@ -78,6 +89,12 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
     fd.set("available", available ? "on" : "");
     fd.set("notesEnabled", notesEnabled ? "on" : "");
     fd.set("categorySlug", categorySlug);
+    // Empty string = untracked; numeric = tracked. The action parses this.
+    fd.set("stockQuantity", trackStock ? stockQuantity.trim() || "0" : "");
+    fd.set(
+      "lowStockThreshold",
+      trackStock && lowStockThreshold.trim() ? lowStockThreshold.trim() : "",
+    );
     // Slug is derived from the name when the user hasn't typed one.
     fd.set("slug", (slug.trim() || slugify(name)));
     fd.delete("addonGroupIds");
@@ -387,6 +404,61 @@ export function ItemForm({ mode, categories, addonGroups, item }: Props) {
               disabled={!notesEnabled}
             />
           </Field>
+        </Section>
+
+        <Section
+          title="Stock"
+          description="Track how many of this dish are available. When stock hits 0 it's auto-marked sold out — no kitchen overselling."
+        >
+          <label className="flex items-center gap-3 cursor-pointer rounded-2xl border border-platinum-200 bg-platinum-50/40 p-4">
+            <Checkbox
+              checked={trackStock}
+              onCheckedChange={(v) => setTrackStock(v === true)}
+            />
+            <div>
+              <p className="text-sm font-medium">Track stock for this dish</p>
+              <p className="text-xs text-muted-foreground">
+                Off by default. Untracked dishes follow the &ldquo;Available
+                for orders&rdquo; switch only.
+              </p>
+            </div>
+          </label>
+
+          {trackStock ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="On hand"
+                htmlFor="stockQuantity"
+                hint="Units currently available. Each order decrements this."
+              >
+                <Input
+                  id="stockQuantity"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={stockQuantity}
+                  onChange={(e) => setStockQuantity(e.target.value)}
+                  className="h-11 tabular-nums"
+                />
+              </Field>
+              <Field
+                label="Low-stock warning at"
+                htmlFor="lowStockThreshold"
+                hint="When stock falls to this level, the dish appears in the dashboard's Running low list. Leave blank to skip the warning."
+              >
+                <Input
+                  id="lowStockThreshold"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={lowStockThreshold}
+                  onChange={(e) => setLowStockThreshold(e.target.value)}
+                  className="h-11 tabular-nums"
+                  placeholder="(optional)"
+                />
+              </Field>
+            </div>
+          ) : null}
         </Section>
 
         <Section

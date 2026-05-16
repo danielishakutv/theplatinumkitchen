@@ -28,6 +28,10 @@ export const createItemSchema = z.object({
   tags: z.array(tagField).max(10).default([]),
   prepMinutes: z.number().int().min(1).max(600).default(20),
   available: z.boolean().default(true),
+  // null = untracked; explicit number = tracked. Same shape on update so an
+  // admin can switch tracking on/off without other plumbing.
+  stockQuantity: z.number().int().min(0).max(1_000_000).nullable().optional(),
+  lowStockThreshold: z.number().int().min(1).max(1_000_000).nullable().optional(),
   notesEnabled: z.boolean().default(true),
   notesPlaceholder: z.string().trim().max(200).default(""),
   sortOrder: z.number().int().default(0),

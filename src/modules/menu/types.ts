@@ -44,12 +44,30 @@ export interface MenuItem {
   tags?: MenuItemTag[];
   prepMinutes: number;
   available: boolean;
+  // Inventory. `null` = untracked (always orderable per `available`). When a
+  // number, decremented on each order in the order-creation transaction;
+  // hitting 0 effectively sells the item out even when `available` is true.
+  stockQuantity?: number | null;
+  // Optional warning level for the admin dashboard's "Running low" widget.
+  lowStockThreshold?: number | null;
   // Customer notes field on the dish detail dialog. Optional in the type so
   // hand-authored data (e.g. seed) can omit them; the DB layer always
   // populates them via column defaults.
   notesEnabled?: boolean;
   notesPlaceholder?: string;
   addonGroups?: AddonGroup[];
+}
+
+// Effective availability: respects the admin's manual "available" toggle AND
+// stock (when stock tracking is on). Use this anywhere a customer-facing
+// surface decides whether the item can be ordered, instead of reading
+// `available` directly.
+export function isItemAvailable(
+  item: Pick<MenuItem, "available" | "stockQuantity">,
+): boolean {
+  if (!item.available) return false;
+  if (item.stockQuantity != null && item.stockQuantity <= 0) return false;
+  return true;
 }
 
 export type MenuError =

@@ -47,6 +47,17 @@ function parsePrice(value: unknown): number {
   return Math.round(n);
 }
 
+// Stock + threshold fields: empty/blank → null (untracked / no warning),
+// otherwise a non-negative integer.
+function parseNullableInt(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (s === "") return null;
+  const n = Number(s);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.floor(n);
+}
+
 function parseTags(raw: string): string[] {
   return raw
     .split(",")
@@ -91,6 +102,8 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
     tags: parseTags(String(formData.get("tags") ?? "")) as CreateItemInput["tags"],
     prepMinutes: Number(formData.get("prepMinutes") ?? 20),
     available: formData.get("available") === "on",
+    stockQuantity: parseNullableInt(formData.get("stockQuantity")),
+    lowStockThreshold: parseNullableInt(formData.get("lowStockThreshold")),
     notesEnabled: formData.get("notesEnabled") === "on",
     notesPlaceholder: String(formData.get("notesPlaceholder") ?? "").trim(),
     sortOrder: Number(formData.get("sortOrder") ?? 0),
@@ -125,6 +138,8 @@ export async function updateItemAction(
     tags: parseTags(String(formData.get("tags") ?? "")) as UpdateItemInput["tags"],
     prepMinutes: Number(formData.get("prepMinutes") ?? 20),
     available: formData.get("available") === "on",
+    stockQuantity: parseNullableInt(formData.get("stockQuantity")),
+    lowStockThreshold: parseNullableInt(formData.get("lowStockThreshold")),
     notesEnabled: formData.get("notesEnabled") === "on",
     notesPlaceholder: String(formData.get("notesPlaceholder") ?? "").trim(),
     addonGroupIds: parseAddonGroupIds(formData),

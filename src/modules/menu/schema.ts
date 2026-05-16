@@ -32,6 +32,13 @@ export const menuItems = pgTable("menu_items", {
   tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
   prepMinutes: integer("prep_minutes").notNull().default(20),
   available: boolean("available").notNull().default(true),
+  // Inventory. NULL = untracked (item is always orderable as long as
+  // `available` is true). When set, the value is atomically decremented
+  // inside the order-creation transaction; reaching 0 auto-blocks orders.
+  stockQuantity: integer("stock_quantity"),
+  // Optional warning level — the admin dashboard's "Running low" list shows
+  // tracked items whose stock has fallen to or below this number.
+  lowStockThreshold: integer("low_stock_threshold"),
   // Whether the customer sees a "Notes for the kitchen" textarea on this
   // dish's detail dialog. Off for items where notes don't apply (e.g. drinks).
   notesEnabled: boolean("notes_enabled").notNull().default(true),

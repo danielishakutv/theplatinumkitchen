@@ -13,7 +13,11 @@ export type {
   MenuItemTag,
   MenuError,
 } from "./types";
-export { MenuServiceError, MENU_ERROR_STATUS } from "./types";
+export {
+  MenuServiceError,
+  MENU_ERROR_STATUS,
+  isItemAvailable,
+} from "./types";
 export {
   createItemSchema,
   updateItemSchema,
@@ -35,6 +39,7 @@ export {
 export {
   listCategories,
   listItems,
+  listLowStockItems,
   listAddonGroups,
   findItemBySlug,
   findItemById,

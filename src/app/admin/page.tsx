@@ -7,10 +7,12 @@ import {
   Wallet,
   ArrowUpRight,
   ChefHat,
+  PackageOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPopularItems, listOrders } from "@/modules/orders";
+import { listLowStockItems } from "@/modules/menu";
 import { ROLE_LABEL, listStaff, can } from "@/modules/users";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +62,12 @@ export default async function AdminOverviewPage() {
 
   const popular = can(user, "orders:read")
     ? await getPopularItems(user, { days: 7, limit: 4 })
+    : [];
+
+  // Tracked items running at or below their warning threshold. Hidden when
+  // empty so a fresh shop without stock tracking sees nothing here.
+  const lowStock = can(user, "menu:read")
+    ? await listLowStockItems(user, 5)
     : [];
 
   // Day-over-day delta strings. Pct change for money; absolute diff for counts.
@@ -245,6 +253,64 @@ export default async function AdminOverviewPage() {
           )}
         </section>
       </div>
+
+      {/* Running low — only tracked dishes at or below their warning level */}
+      {lowStock.length > 0 ? (
+        <section className="rounded-3xl border border-amber-300 bg-amber-50/40">
+          <header className="flex items-center justify-between border-b border-amber-200 px-6 py-4">
+            <div>
+              <h2 className="font-display text-xl">Running low</h2>
+              <p className="text-xs text-muted-foreground">
+                {lowStock.length} dish{lowStock.length === 1 ? "" : "es"} at or
+                below the warning level
+              </p>
+            </div>
+            <PackageOpen className="h-4 w-4 text-amber-700" />
+          </header>
+          <ul className="divide-y divide-amber-200/60">
+            {lowStock.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center gap-3 px-6 py-3.5"
+              >
+                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-amber-100">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt=""
+                      fill
+                      sizes="44px"
+                      className="object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Threshold: {item.lowStockThreshold ?? "—"}
+                  </p>
+                </div>
+                <span className="font-display text-base font-semibold tabular-nums text-amber-800">
+                  {item.stockQuantity ?? 0}
+                  <span className="ml-1 text-xs font-medium text-muted-foreground">
+                    left
+                  </span>
+                </span>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1 rounded-full"
+                >
+                  <Link href={`/admin/menu/items/${item.id}/edit`}>
+                    Restock <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* Roster */}
       {onShift.length > 0 ? (

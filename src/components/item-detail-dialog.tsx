@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { AddonGroup, AddonOption, MenuItem } from "@/modules/menu";
+// Value import from the leaf — the @/modules/menu barrel is server-only.
+import { isItemAvailable } from "@/modules/menu/types";
 import { useCart, type CartLineAddon } from "@/modules/cart";
 import { formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -210,7 +212,7 @@ export function ItemDetailDialog({
                 size="lg"
                 className="h-12 flex-1 min-w-[14rem] rounded-full text-base font-medium shadow-lg shadow-primary/15"
                 onClick={handleAdd}
-                disabled={validationErrors.length > 0 || !item.available}
+                disabled={validationErrors.length > 0 || !isItemAvailable(item)}
               >
                 {validationErrors.length > 0
                   ? validationErrors[0]

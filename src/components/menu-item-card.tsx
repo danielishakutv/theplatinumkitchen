@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/modules/cart";
 import { ItemDetailDialog } from "@/components/item-detail-dialog";
 import type { MenuItem } from "@/modules/menu";
+// Value import from the leaf — the @/modules/menu barrel is server-only.
+import { isItemAvailable } from "@/modules/menu/types";
 import { formatNaira } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +80,7 @@ export function MenuItemCard({ item, onOpen }: MenuItemCardProps) {
         className={cn(
           "group relative flex flex-col overflow-hidden rounded-2xl border border-platinum-200 bg-card shadow-sm transition-all",
           "hover:-translate-y-0.5 hover:border-platinum-300 hover:shadow-lg hover:shadow-platinum-300/30",
-          !item.available && "opacity-60",
+          !isItemAvailable(item) && "opacity-60",
         )}
       >
         <button
@@ -121,7 +123,7 @@ export function MenuItemCard({ item, onOpen }: MenuItemCardProps) {
               })}
             </div>
           ) : null}
-          {!item.available ? (
+          {!isItemAvailable(item) ? (
             <div className="absolute inset-0 grid place-items-center bg-background/80 backdrop-blur-sm">
               <span className="rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-background">
                 Sold out today
@@ -150,7 +152,7 @@ export function MenuItemCard({ item, onOpen }: MenuItemCardProps) {
             <Button
               size="sm"
               onClick={handleQuickAdd}
-              disabled={!item.available}
+              disabled={!isItemAvailable(item)}
               className="h-10 gap-1.5 rounded-full px-4 shadow-sm"
             >
               <Plus className="h-4 w-4" />

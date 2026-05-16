@@ -275,6 +275,15 @@ export async function createOrderFromCart(input: {
         `${item.name} is sold out today.`,
       );
     }
+    // Pre-check stock so we fail fast with a clear message. The real source
+    // of truth is the atomic decrement inside the order transaction below,
+    // which catches anyone who beat us between fetch and write.
+    if (item.stockQuantity !== null && item.stockQuantity <= 0) {
+      throw new OrderServiceError(
+        "ORDER_ITEM_UNAVAILABLE",
+        `${item.name} is sold out today.`,
+      );
+    }
   }
 
   // Look up all referenced addon options in one shot.
@@ -379,6 +388,41 @@ export async function createOrderFromCart(input: {
         sortOrder: x.idx,
       })),
     );
+
+    // Atomically decrement stock for tracked items. Cart lines that share an
+    // itemId are summed first so one update covers them. The `gte` predicate
+    // is the real source of truth — if a concurrent order beat us to the
+    // last unit, the update affects 0 rows and we throw, rolling the whole
+    // transaction back (so the order row is not committed either).
+    const itemQtyTotals = new Map<string, number>();
+    for (const x of lineSnapshots) {
+      itemQtyTotals.set(
+        x.item.id,
+        (itemQtyTotals.get(x.item.id) ?? 0) + x.l.quantity,
+      );
+    }
+    for (const [itemId, qty] of itemQtyTotals) {
+      const itemRow = itemById.get(itemId)!;
+      if (itemRow.stockQuantity === null) continue;
+      const updated = await tx
+        .update(menuItems)
+        .set({
+          stockQuantity: sql`${menuItems.stockQuantity} - ${qty}`,
+        })
+        .where(
+          and(
+            eq(menuItems.id, itemId),
+            gte(menuItems.stockQuantity, qty),
+          ),
+        )
+        .returning({ stockQuantity: menuItems.stockQuantity });
+      if (updated.length === 0) {
+        throw new OrderServiceError(
+          "ORDER_ITEM_UNAVAILABLE",
+          `${itemRow.name} just sold out — please refresh and try again.`,
+        );
+      }
+    }
 
     return row.id;
   });

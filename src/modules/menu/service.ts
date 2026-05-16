@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   menuAddonGroups,
@@ -49,6 +49,8 @@ function rowToItem(row: MenuItemRow, addonGroups: AddonGroup[]): MenuItem {
     tags: (row.tags as MenuItemTag[]) ?? [],
     prepMinutes: row.prepMinutes,
     available: row.available,
+    stockQuantity: row.stockQuantity,
+    lowStockThreshold: row.lowStockThreshold,
     notesEnabled: row.notesEnabled,
     notesPlaceholder: row.notesPlaceholder,
     addonGroups,
@@ -128,6 +130,30 @@ export async function listItems(): Promise<MenuItem[]> {
     .select()
     .from(menuItems)
     .orderBy(asc(menuItems.categorySlug), asc(menuItems.sortOrder), asc(menuItems.name));
+  const addons = await loadAddonsForItems(rows.map((r) => r.id));
+  return rows.map((r) => rowToItem(r, addons.get(r.id) ?? []));
+}
+
+// Tracked items (stock_quantity not null) whose stock has fallen to or below
+// their warning threshold. Items without a threshold opt out of warnings even
+// when stock-tracked. Used by the admin dashboard's "Running low" widget.
+export async function listLowStockItems(
+  actor: ActorLike,
+  limit = 5,
+): Promise<MenuItem[]> {
+  requirePermission(actor, "menu:read");
+  const rows = await db
+    .select()
+    .from(menuItems)
+    .where(
+      and(
+        isNotNull(menuItems.stockQuantity),
+        isNotNull(menuItems.lowStockThreshold),
+        lte(menuItems.stockQuantity, menuItems.lowStockThreshold),
+      ),
+    )
+    .orderBy(asc(menuItems.stockQuantity), asc(menuItems.name))
+    .limit(limit);
   const addons = await loadAddonsForItems(rows.map((r) => r.id));
   return rows.map((r) => rowToItem(r, addons.get(r.id) ?? []));
 }
@@ -218,6 +244,8 @@ export async function createItem(
       tags: data.tags,
       prepMinutes: data.prepMinutes,
       available: data.available,
+      stockQuantity: data.stockQuantity ?? null,
+      lowStockThreshold: data.lowStockThreshold ?? null,
       notesEnabled: data.notesEnabled,
       notesPlaceholder: data.notesPlaceholder,
       sortOrder: data.sortOrder,
@@ -270,6 +298,8 @@ export async function updateItem(
   if (data.tags !== undefined) patch.tags = data.tags;
   if (data.prepMinutes !== undefined) patch.prepMinutes = data.prepMinutes;
   if (data.available !== undefined) patch.available = data.available;
+  if (data.stockQuantity !== undefined) patch.stockQuantity = data.stockQuantity;
+  if (data.lowStockThreshold !== undefined) patch.lowStockThreshold = data.lowStockThreshold;
   if (data.notesEnabled !== undefined) patch.notesEnabled = data.notesEnabled;
   if (data.notesPlaceholder !== undefined) patch.notesPlaceholder = data.notesPlaceholder;
   if (data.sortOrder !== undefined) patch.sortOrder = data.sortOrder;
