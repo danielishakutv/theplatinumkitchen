@@ -11,14 +11,60 @@ import { getSettings, type Settings } from "@/modules/settings";
 // Docker build).
 export const dynamic = "force-dynamic";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://theplatinumkitchen.com";
+
+function buildRestaurantJsonLd(settings: Settings) {
+  const street = settings.addressStreet;
+  const sameAs = [settings.instagramUrl, settings.facebookUrl, settings.twitterUrl]
+    .filter(Boolean);
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    "@id": `${SITE_URL}/#restaurant`,
+    name: settings.restaurantName || "Platinum Kitchen",
+    description:
+      settings.tagline ||
+      "Refined Nigerian cuisine, prepared with care, delivered across Abuja.",
+    url: SITE_URL,
+    image: `${SITE_URL}/opengraph-image`,
+    servesCuisine: ["Nigerian", "West African"],
+    priceRange: "₦₦",
+    telephone: settings.phone || undefined,
+    email: settings.email || undefined,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: street || undefined,
+      addressLocality: settings.addressArea || settings.addressCity || undefined,
+      addressRegion: settings.addressState || undefined,
+      addressCountry: "NG",
+    },
+    areaServed: {
+      "@type": "City",
+      name: settings.addressCity || "Abuja",
+    },
+    hasMenu: `${SITE_URL}/menu`,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+    acceptsReservations: false,
+  };
+}
+
 export default async function HomePage() {
   const [items, settings] = await Promise.all([listItems(), getSettings()]);
   const featured = items
     .filter((i) => i.tags?.includes("chef's-pick") && i.available)
     .slice(0, 4);
+  const jsonLd = buildRestaurantJsonLd(settings);
 
   return (
     <>
+      {/* Structured data: Google and other engines lift the restaurant's
+          name, hours, address, and cuisine straight into rich results. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Hero settings={settings} />
       <Featured items={featured} />
       <HowItWorks />

@@ -1,10 +1,26 @@
 import { listCategories, listItems } from "@/modules/menu";
 import { MenuBrowser } from "@/components/menu-browser";
 
-export const metadata = {
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "Menu",
   description:
-    "The full Platinum Kitchen menu — signature dishes, soups, grills, and more. Build your order with confidence.",
+    "The full Platinum Kitchen menu — signatures, rice & grains, soups & swallow, grills, suya, small chops, and more. Order Nigerian food delivered across Abuja.",
+  alternates: { canonical: "/menu" },
+  openGraph: {
+    title: "Platinum Kitchen Menu",
+    description:
+      "Browse the full menu — signature jollof, suya, soups, small chops, and more. Built dish by dish, by hand.",
+    url: "/menu",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Platinum Kitchen Menu",
+    description:
+      "Browse the full menu — signature jollof, suya, soups, small chops, and more.",
+  },
 };
 
 // Reads from the database, so we render on demand instead of at build time
