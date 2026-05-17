@@ -101,10 +101,14 @@ export function OrderForm({ menu, order }: { menu: MenuItem[]; order?: Order }) 
   const [emailCustomer, setEmailCustomer] = useState(false);
 
   // --- line helpers ---
+  // Newly-added lines are prepended so the admin sees the dish they just
+  // tapped at the top of the cart — they can adjust qty / add-ons right away
+  // without scrolling past every previously-added line. On the edit form this
+  // also keeps the order's existing lines at the bottom and additions on top.
   const addItem = (itemId: string) =>
     setLines((prev) => [
-      ...prev,
       { key: crypto.randomUUID(), itemId, quantity: 1, addons: [], notes: "" },
+      ...prev,
     ]);
   const removeLine = (key: string) =>
     setLines((prev) => prev.filter((l) => l.key !== key));
