@@ -16,12 +16,12 @@ import {
   ArrowLeft,
   Copy,
   Check,
+  UserCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useCart, useCartTotals, lineUnitTotal, type FulfilmentMethod } from "@/modules/cart";
 import type { PaymentMethod, PlaceOrderInput } from "@/modules/orders";
@@ -43,7 +43,18 @@ export interface BankDetails {
   note: string;
 }
 
-export function CheckoutClient({ bank }: { bank: BankDetails }) {
+export interface CheckoutAccount {
+  name: string;
+  email: string;
+}
+
+export function CheckoutClient({
+  bank,
+  account,
+}: {
+  bank: BankDetails;
+  account: CheckoutAccount | null;
+}) {
   const router = useRouter();
   const lines = useCart((s) => s.lines);
   const fulfilment = useCart((s) => s.fulfilment);
@@ -51,7 +62,6 @@ export function CheckoutClient({ bank }: { bank: BankDetails }) {
   const clearCart = useCart((s) => s.clear);
   const totals = useCartTotals();
 
-  const [mode, setMode] = useState<"guest" | "account">("guest");
   const [payment, setPayment] = useState<PaymentMethod>("cod");
   const [submitting, setSubmitting] = useState(false);
 
@@ -140,33 +150,48 @@ export function CheckoutClient({ bank }: { bank: BankDetails }) {
         className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start"
       >
         <div className="space-y-9">
-          {/* Account mode */}
-          <Section title="How would you like to order">
-            <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
-              <TabsList className="h-11 w-full rounded-full bg-platinum-100 p-1">
-                <TabsTrigger value="guest" className="h-9 flex-1 rounded-full">
-                  Continue as guest
-                </TabsTrigger>
-                <TabsTrigger value="account" className="h-9 flex-1 rounded-full">
-                  Sign in to account
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            {mode === "account" ? (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Sign-in lands here in production — for the demo, continue as guest below.
-              </p>
-            ) : null}
-          </Section>
+          {account ? (
+            <div className="flex items-center gap-3 rounded-2xl border border-platinum-200 bg-card p-4">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                <UserCircle2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="font-medium">Signed in as {account.name || account.email}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {account.email}
+                </p>
+              </div>
+              <Button asChild variant="ghost" size="sm" className="h-8 rounded-full">
+                <Link href="/account">Account</Link>
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Have an account?{" "}
+              <Link
+                href="/sign-in?from=/checkout"
+                className="font-medium text-primary hover:underline"
+              >
+                Sign in
+              </Link>{" "}
+              to skip retyping your details — or just fill in the form below.
+            </p>
+          )}
 
           <Section title="Your details">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="name" label="Full name" required defaultValue="Tobi Adeleke" />
+              <Field
+                id="name"
+                label="Full name"
+                required
+                placeholder="e.g. Tobi Adeleke"
+                defaultValue={account?.name ?? ""}
+              />
               <Field
                 id="phone"
                 label="Phone number"
                 required
-                defaultValue="+234 803 412 9087"
+                placeholder="e.g. +234 803 000 0000"
                 inputMode="tel"
               />
               <Field
@@ -175,7 +200,7 @@ export function CheckoutClient({ bank }: { bank: BankDetails }) {
                 type="email"
                 placeholder="optional"
                 className="sm:col-span-2"
-                defaultValue="tobi@example.com"
+                defaultValue={account?.email ?? ""}
               />
             </div>
           </Section>
@@ -223,15 +248,20 @@ export function CheckoutClient({ bank }: { bank: BankDetails }) {
                   label="Street address"
                   required
                   className="sm:col-span-2"
-                  defaultValue="12 Aminu Kano Crescent"
+                  placeholder="House number and street"
                 />
-                <Field id="area" label="Area" required defaultValue="Wuse 2" />
-                <Field id="city" label="City" defaultValue="Abuja" />
+                <Field
+                  id="area"
+                  label="Area"
+                  required
+                  placeholder="e.g. Wuse 2, Maitama, Gwarinpa"
+                />
+                <Field id="city" label="City" placeholder="Abuja" />
                 <Field
                   id="landmark"
                   label="Landmark (optional)"
                   className="sm:col-span-2"
-                  defaultValue="Beside Sahad Stores"
+                  placeholder="e.g. Beside Sahad Stores"
                 />
                 <div className="sm:col-span-2 space-y-2">
                   <Label htmlFor="instructions" className="text-sm font-medium">
